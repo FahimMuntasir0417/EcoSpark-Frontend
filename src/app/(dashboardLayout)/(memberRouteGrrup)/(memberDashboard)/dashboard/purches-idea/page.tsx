@@ -1,9 +1,18 @@
-﻿"use client";
+"use client";
 
+import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
 import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   useCancelPurchaseMutation,
   useMyPurchasesQuery,
@@ -43,6 +52,18 @@ function formatCurrency(amount: number | null, currency?: string | null) {
   }
 
   return `${amount} ${currency || "USD"}`;
+}
+
+function formatLabel(value?: string | null, fallback = "N/A") {
+  if (typeof value !== "string" || !value.trim()) {
+    return fallback;
+  }
+
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 export default function PurchesIdeaPage() {
@@ -167,38 +188,61 @@ export default function PurchesIdeaPage() {
         {ideas.length === 0 ? (
           <EmptyState title="No ideas available for purchase" />
         ) : (
-          <ul className="space-y-3">
-            {ideas.map((idea) => {
-              const isPurchasing =
-                purchaseIdeaMutation.isPending &&
-                purchaseIdeaMutation.variables?.ideaId === idea.id;
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Idea</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Access</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {ideas.map((idea) => {
+                const isPurchasing =
+                  purchaseIdeaMutation.isPending &&
+                  purchaseIdeaMutation.variables?.ideaId === idea.id;
 
-              return (
-                <li key={idea.id} className="rounded-xl border bg-background p-4">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div className="space-y-1">
-                      <p className="font-medium">{getIdeaTitle(idea)}</p>
-                      <p className="text-sm text-muted-foreground">Status: {idea.status ?? "Unknown"}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Price: {formatCurrency(getIdeaPrice(idea), idea.currency)}
-                      </p>
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={isPurchasing || !paymentProvider.trim()}
-                      onClick={() => {
-                        void onPurchase(idea.id);
-                      }}
-                    >
-                      {isPurchasing ? "Purchasing..." : "Purchase"}
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                return (
+                  <TableRow key={idea.id}>
+                    <TableCell className="min-w-72">
+                      <div className="space-y-1">
+                        <p className="font-medium text-slate-950">{getIdeaTitle(idea)}</p>
+                        <p className="text-sm text-slate-600">
+                          {idea.excerpt ?? idea.description ?? "No summary available."}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>{formatLabel(idea.status, "Unknown")}</TableCell>
+                    <TableCell>{formatLabel(idea.accessType, "Unknown")}</TableCell>
+                    <TableCell>{formatCurrency(getIdeaPrice(idea), idea.currency)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/idea/${idea.id}`}
+                          className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
+                        >
+                          View
+                        </Link>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isPurchasing || !paymentProvider.trim()}
+                          onClick={() => {
+                            void onPurchase(idea.id);
+                          }}
+                        >
+                          {isPurchasing ? "Purchasing..." : "Purchase"}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
       </section>
 
@@ -208,42 +252,68 @@ export default function PurchesIdeaPage() {
         {purchases.length === 0 ? (
           <EmptyState title="No purchases yet" />
         ) : (
-          <ul className="space-y-3">
-            {purchases.map((purchase) => {
-              const idea = typeof purchase.ideaId === "string" ? ideaMap.get(purchase.ideaId) : undefined;
-              const isCancelling =
-                cancelPurchaseMutation.isPending &&
-                cancelPurchaseMutation.variables?.id === purchase.id;
-              const purchaseStatus = typeof purchase.status === "string" ? purchase.status : "UNKNOWN";
-              const canCancel = !purchaseStatus.toLowerCase().includes("cancel");
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Idea</TableHead>
+                <TableHead>Purchase ID</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {purchases.map((purchase) => {
+                const idea = typeof purchase.ideaId === "string" ? ideaMap.get(purchase.ideaId) : undefined;
+                const isCancelling =
+                  cancelPurchaseMutation.isPending &&
+                  cancelPurchaseMutation.variables?.id === purchase.id;
+                const purchaseStatus = typeof purchase.status === "string" ? purchase.status : "UNKNOWN";
+                const canCancel = !purchaseStatus.toLowerCase().includes("cancel");
 
-              return (
-                <li key={purchase.id} className="rounded-xl border bg-background p-4">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div className="space-y-1">
-                      <p className="font-medium">{idea ? getIdeaTitle(idea) : purchase.ideaId ?? "Purchase"}</p>
-                      <p className="text-sm text-muted-foreground">Purchase ID: {purchase.id}</p>
-                      <p className="text-sm text-muted-foreground">Status: {purchaseStatus}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Amount: {formatCurrency(purchase.amount ?? null, purchase.currency)}
-                      </p>
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={isCancelling || !canCancel}
-                      onClick={() => {
-                        void onCancelPurchase(purchase.id);
-                      }}
-                    >
-                      {isCancelling ? "Cancelling..." : canCancel ? "Cancel Purchase" : "Not cancellable"}
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                return (
+                  <TableRow key={purchase.id}>
+                    <TableCell className="min-w-72">
+                      <div className="space-y-1">
+                        <p className="font-medium text-slate-950">
+                          {idea ? getIdeaTitle(idea) : purchase.ideaId ?? "Purchase"}
+                        </p>
+                        {idea?.description ? (
+                          <p className="text-sm text-slate-600">{idea.description}</p>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{purchase.id}</TableCell>
+                    <TableCell>{formatLabel(purchaseStatus, "Unknown")}</TableCell>
+                    <TableCell>{formatCurrency(purchase.amount ?? null, purchase.currency)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        {purchase.ideaId ? (
+                          <Link
+                            href={`/idea/${purchase.ideaId}`}
+                            className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
+                          >
+                            View
+                          </Link>
+                        ) : null}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isCancelling || !canCancel}
+                          onClick={() => {
+                            void onCancelPurchase(purchase.id);
+                          }}
+                        >
+                          {isCancelling ? "Cancelling..." : canCancel ? "Cancel" : "Locked"}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
       </section>
     </section>

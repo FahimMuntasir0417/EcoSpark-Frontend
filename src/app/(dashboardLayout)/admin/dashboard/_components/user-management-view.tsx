@@ -4,6 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   useDeleteScientistMutation,
   useVerifyScientistMutation,
 } from "@/features/scientist";
@@ -246,9 +254,14 @@ export function UserManagementView({ mode }: Readonly<UserManagementViewProps>) 
 
     return (
       <section className="space-y-6">
-        <div>
-          <h2 className="text-xl font-semibold">{heading.title}</h2>
-          <p className="text-sm text-muted-foreground">{heading.description}</p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold">{heading.title}</h2>
+            <p className="text-sm text-muted-foreground">{heading.description}</p>
+          </div>
+          <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700">
+            Total Scientists: {scientists.length}
+          </div>
         </div>
 
         {scientistDirectoryWarning ? (
@@ -260,7 +273,17 @@ export function UserManagementView({ mode }: Readonly<UserManagementViewProps>) 
         {scientists.length === 0 ? (
           <EmptyState title="No scientist records found" />
         ) : (
-          <ul className="space-y-3">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Scientist</TableHead>
+                <TableHead>Scientist ID</TableHead>
+                <TableHead>User ID</TableHead>
+                <TableHead>Verification</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
             {scientists.map((scientist) => {
               const fallbackUser = getScientistLinkedUser(scientist);
               const user = userMap.get(getScientistUserId(scientist) ?? "") ?? fallbackUser;
@@ -272,24 +295,29 @@ export function UserManagementView({ mode }: Readonly<UserManagementViewProps>) 
                 deleteScientistMutation.variables?.id === scientist.id;
 
               return (
-                <li key={scientist.id} className="rounded-xl border bg-background p-4">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <TableRow key={scientist.id}>
+                  <TableCell className="min-w-72">
                     <div className="space-y-1">
-                      <p className="font-medium">{getUserName(user)}</p>
-                      <p className="text-sm text-muted-foreground">{getUserEmail(user)}</p>
-                      <p className="text-sm text-muted-foreground">Scientist ID: {scientist.id}</p>
-                      <p className="text-sm text-muted-foreground">
-                        User ID: {getScientistUserId(scientist) ?? "N/A"}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Verification: {scientist.isVerified ? "Verified" : "Pending"}
+                      <p className="font-medium text-slate-950">{getUserName(user)}</p>
+                      <p className="text-sm text-slate-600">{getUserEmail(user)}</p>
+                      <p className="text-xs text-slate-500">
+                        Source: {user ? "linked user" : "scientist fallback"}
                       </p>
                     </div>
-
-                    <div className="flex flex-wrap gap-2">
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{scientist.id}</TableCell>
+                  <TableCell className="font-mono text-xs">{getScientistUserId(scientist) ?? "N/A"}</TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+                      {scientist.isVerified ? "Verified" : "Pending"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex flex-wrap justify-end gap-2">
                       <Button
                         type="button"
                         variant="outline"
+                        size="sm"
                         disabled={isVerifying}
                         onClick={() => {
                           verifyScientistMutation.mutate({
@@ -307,6 +335,7 @@ export function UserManagementView({ mode }: Readonly<UserManagementViewProps>) 
                       <Button
                         type="button"
                         variant="destructive"
+                        size="sm"
                         disabled={isDeleting}
                         onClick={() => {
                           const confirmed = window.confirm(
@@ -323,11 +352,12 @@ export function UserManagementView({ mode }: Readonly<UserManagementViewProps>) 
                         {isDeleting ? "Deleting..." : "Delete"}
                       </Button>
                     </div>
-                  </div>
-                </li>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          </ul>
+            </TableBody>
+          </Table>
         )}
       </section>
     );
@@ -341,9 +371,14 @@ export function UserManagementView({ mode }: Readonly<UserManagementViewProps>) 
 
   return (
     <section className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">{heading.title}</h2>
-        <p className="text-sm text-muted-foreground">{heading.description}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold">{heading.title}</h2>
+          <p className="text-sm text-muted-foreground">{heading.description}</p>
+        </div>
+        <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700">
+          Total Records: {filteredUsers.length}
+        </div>
       </div>
 
       {userDirectory.warning ? (
@@ -364,21 +399,31 @@ export function UserManagementView({ mode }: Readonly<UserManagementViewProps>) 
           description={emptyDescription || undefined}
         />
       ) : (
-        <ul className="space-y-3">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>User ID</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
           {filteredUsers.map((user) => {
             const userId = getUserId(user);
             const role = extractUserRole(user);
 
             return (
-              <li key={userId} className="rounded-xl border bg-background p-4">
-                <p className="font-medium">{getUserName(user)}</p>
-                <p className="text-sm text-muted-foreground">{getUserEmail(user)}</p>
-                <p className="text-sm text-muted-foreground">Role: {formatRole(role)}</p>
-                <p className="text-sm text-muted-foreground">User ID: {userId}</p>
-              </li>
+              <TableRow key={userId}>
+                <TableCell className="font-medium text-slate-950">{getUserName(user)}</TableCell>
+                <TableCell>{getUserEmail(user)}</TableCell>
+                <TableCell>{formatRole(role)}</TableCell>
+                <TableCell className="font-mono text-xs">{userId}</TableCell>
+              </TableRow>
             );
           })}
-        </ul>
+          </TableBody>
+        </Table>
       )}
     </section>
   );

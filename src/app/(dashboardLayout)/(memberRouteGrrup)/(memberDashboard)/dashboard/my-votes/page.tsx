@@ -1,8 +1,17 @@
-﻿"use client";
+"use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useIdeasQuery } from "@/features/idea";
 import {
   useRemoveVoteMutation,
@@ -55,6 +64,18 @@ function extractCurrentVote(idea: Idea): VoteType | null {
   }
 
   return null;
+}
+
+function formatLabel(value?: string | null, fallback = "N/A") {
+  if (typeof value !== "string" || !value.trim()) {
+    return fallback;
+  }
+
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 export default function MyVotesPage() {
@@ -162,61 +183,90 @@ export default function MyVotesPage() {
         </p>
       ) : null}
 
-      <ul className="space-y-3">
-        {visibleIdeas.map((idea) => {
-          const currentVote = extractCurrentVote(idea);
-          const isVoting =
-            (voteIdeaMutation.isPending && voteIdeaMutation.variables?.ideaId === idea.id) ||
-            (updateVoteMutation.isPending && updateVoteMutation.variables?.ideaId === idea.id) ||
-            (removeVoteMutation.isPending && removeVoteMutation.variables?.ideaId === idea.id);
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Idea</TableHead>
+            <TableHead>Current Vote</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Totals</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {visibleIdeas.map((idea) => {
+            const currentVote = extractCurrentVote(idea);
+            const isVoting =
+              (voteIdeaMutation.isPending && voteIdeaMutation.variables?.ideaId === idea.id) ||
+              (updateVoteMutation.isPending && updateVoteMutation.variables?.ideaId === idea.id) ||
+              (removeVoteMutation.isPending && removeVoteMutation.variables?.ideaId === idea.id);
 
-          return (
-            <li key={idea.id} className="rounded-xl border bg-background p-4">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="space-y-1">
-                  <p className="font-medium">{getIdeaTitle(idea)}</p>
-                  <p className="text-sm text-muted-foreground">Current vote: {currentVote ?? "Not detected"}</p>
-                  <p className="text-sm text-muted-foreground">Upvotes: {idea.totalUpvotes ?? 0}</p>
-                  <p className="text-sm text-muted-foreground">Downvotes: {idea.totalDownvotes ?? 0}</p>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant={currentVote === "UP" ? "default" : "outline"}
-                    disabled={isVoting}
-                    onClick={() => {
-                      void submitVote(idea, "UP");
-                    }}
-                  >
-                    Upvote
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={currentVote === "DOWN" ? "default" : "outline"}
-                    disabled={isVoting}
-                    onClick={() => {
-                      void submitVote(idea, "DOWN");
-                    }}
-                  >
-                    Downvote
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    disabled={isVoting || !currentVote}
-                    onClick={() => {
-                      void removeVote(idea.id);
-                    }}
-                  >
-                    Remove Vote
-                  </Button>
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+            return (
+              <TableRow key={idea.id}>
+                <TableCell className="min-w-72">
+                  <div className="space-y-1">
+                    <p className="font-medium text-slate-950">{getIdeaTitle(idea)}</p>
+                    <p className="text-sm text-slate-600">
+                      {idea.excerpt ?? idea.description ?? "No summary available."}
+                    </p>
+                  </div>
+                </TableCell>
+                <TableCell>{currentVote ?? "Not detected"}</TableCell>
+                <TableCell>{formatLabel(idea.status, "Unknown")}</TableCell>
+                <TableCell>
+                  <div className="space-y-1 text-sm">
+                    <p>Upvotes: {idea.totalUpvotes ?? 0}</p>
+                    <p>Downvotes: {idea.totalDownvotes ?? 0}</p>
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Link
+                      href={`/idea/${idea.id}`}
+                      className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
+                    >
+                      View
+                    </Link>
+                    <Button
+                      type="button"
+                      variant={currentVote === "UP" ? "default" : "outline"}
+                      size="sm"
+                      disabled={isVoting}
+                      onClick={() => {
+                        void submitVote(idea, "UP");
+                      }}
+                    >
+                      Upvote
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={currentVote === "DOWN" ? "default" : "outline"}
+                      size="sm"
+                      disabled={isVoting}
+                      onClick={() => {
+                        void submitVote(idea, "DOWN");
+                      }}
+                    >
+                      Downvote
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isVoting || !currentVote}
+                      onClick={() => {
+                        void removeVote(idea.id);
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </section>
   );
 }

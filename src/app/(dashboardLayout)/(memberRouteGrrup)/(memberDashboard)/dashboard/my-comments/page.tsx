@@ -1,8 +1,17 @@
-﻿"use client";
+"use client";
 
 import { useQueries, useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useIdeasQuery } from "@/features/idea";
 import { useDeleteCommentMutation } from "@/features/interaction";
 import { getApiErrorMessage } from "@/lib/errors/api-error";
@@ -40,6 +49,23 @@ function getIdeaTitle(idea: Idea) {
   return typeof idea.title === "string" && idea.title.trim()
     ? idea.title
     : "Untitled idea";
+}
+
+function getCommentTimestamp(comment: Comment) {
+  const record = comment as unknown as Record<string, unknown>;
+  const candidates = [record.updatedAt, record.createdAt, record.postedAt];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      const parsed = new Date(candidate);
+
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toLocaleString();
+      }
+    }
+  }
+
+  return "Time unavailable";
 }
 
 export default function MyCommentsPage() {
@@ -119,44 +145,68 @@ export default function MyCommentsPage() {
       {myComments.length === 0 ? (
         <EmptyState title="No comments found for your account" />
       ) : (
-        <ul className="space-y-3">
-          {myComments.map(({ comment, idea }) => {
-            const isDeleting =
-              deleteCommentMutation.isPending &&
-              deleteCommentMutation.variables?.id === comment.id;
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Idea</TableHead>
+              <TableHead>Comment</TableHead>
+              <TableHead>Updated</TableHead>
+              <TableHead>Comment ID</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {myComments.map(({ comment, idea }) => {
+              const isDeleting =
+                deleteCommentMutation.isPending &&
+                deleteCommentMutation.variables?.id === comment.id;
 
-            return (
-              <li key={comment.id} className="rounded-xl border bg-background p-4">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div className="space-y-1">
-                    <p className="font-medium">{getIdeaTitle(idea)}</p>
-                    <p className="text-sm text-muted-foreground">Comment ID: {comment.id}</p>
-                    <p className="text-sm">{comment.content}</p>
-                  </div>
+              return (
+                <TableRow key={comment.id}>
+                  <TableCell className="min-w-56">
+                    <div className="space-y-1">
+                      <p className="font-medium text-slate-950">{getIdeaTitle(idea)}</p>
+                      <p className="text-xs text-slate-500">Idea ID: {idea.id}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell className="min-w-80">
+                    <p className="text-sm text-slate-700">{comment.content}</p>
+                  </TableCell>
+                  <TableCell>{getCommentTimestamp(comment)}</TableCell>
+                  <TableCell className="font-mono text-xs">{comment.id}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Link
+                        href={`/idea/${idea.id}`}
+                        className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
+                      >
+                        View
+                      </Link>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        disabled={isDeleting}
+                        onClick={() => {
+                          const confirmed = window.confirm("Delete this comment?");
 
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={isDeleting}
-                    onClick={() => {
-                      const confirmed = window.confirm("Delete this comment?");
+                          if (!confirmed) {
+                            return;
+                          }
 
-                      if (!confirmed) {
-                        return;
-                      }
-
-                      deleteCommentMutation.mutate({ id: comment.id });
-                    }}
-                  >
-                    {isDeleting ? "Deleting..." : "Delete"}
-                  </Button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                          deleteCommentMutation.mutate({ id: comment.id });
+                        }}
+                      >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       )}
     </section>
   );
 }
-

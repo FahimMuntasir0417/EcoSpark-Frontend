@@ -1,8 +1,20 @@
 "use client";
 
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { buttonVariants } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useIdeasQuery } from "@/features/idea";
 import { getApiErrorMessage } from "@/lib/errors/api-error";
+import { cn } from "@/lib/utils";
 import type { Idea } from "@/services/idea.service";
 
 function getIdeaTitle(idea: Idea) {
@@ -27,6 +39,26 @@ function getIdeaStatus(idea: Idea) {
   return typeof idea.status === "string" && idea.status.trim()
     ? idea.status
     : "DRAFT";
+}
+
+function formatLabel(value?: string | null, fallback = "N/A") {
+  if (typeof value !== "string" || !value.trim()) {
+    return fallback;
+  }
+
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function MetricBadge({ children }: Readonly<{ children: ReactNode }>) {
+  return (
+    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+      {children}
+    </span>
+  );
 }
 
 function formatDate(value?: string | null) {
@@ -86,24 +118,52 @@ export default function BrowseIdeasPage() {
       {ideas.length === 0 ? (
         <EmptyState title="No ideas found" />
       ) : (
-        <ul className="space-y-3">
-          {ideas.map((idea) => (
-            <li key={idea.id} className="rounded-md border p-4">
-              <p className="font-medium">{getIdeaTitle(idea)}</p>
-              <p className="text-sm text-muted-foreground">Slug: {idea.slug}</p>
-              <p className="text-sm text-muted-foreground">
-                Status: {getIdeaStatus(idea)}
-              </p>
-              <p className="mt-2 text-sm">{getIdeaSummary(idea)}</p>
-
-              <div className="mt-3 space-y-1 text-xs text-muted-foreground">
-                <p>Author: {idea.author?.name ?? "Unknown"}</p>
-                <p>Category: {idea.category?.name ?? "Uncategorized"}</p>
-                <p>Updated: {formatDate(idea.updatedAt)}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Idea</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Metrics</TableHead>
+              <TableHead>Updated</TableHead>
+              <TableHead className="text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {ideas.map((idea) => (
+              <TableRow key={idea.id}>
+                <TableCell className="min-w-72">
+                  <div className="space-y-1">
+                    <p className="font-medium text-slate-950">{getIdeaTitle(idea)}</p>
+                    <p className="text-xs text-slate-500">Slug: {idea.slug}</p>
+                    <p className="max-w-xl text-sm text-slate-600">{getIdeaSummary(idea)}</p>
+                    <p className="text-xs text-slate-500">Author: {idea.author?.name ?? "Unknown"}</p>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <MetricBadge>{formatLabel(getIdeaStatus(idea), "Draft")}</MetricBadge>
+                </TableCell>
+                <TableCell>{idea.category?.name ?? "Uncategorized"}</TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-2">
+                    <MetricBadge>{idea.totalUpvotes ?? 0} upvotes</MetricBadge>
+                    <MetricBadge>{idea.totalComments ?? 0} comments</MetricBadge>
+                    <MetricBadge>{formatLabel(idea.accessType, "Unknown")}</MetricBadge>
+                  </div>
+                </TableCell>
+                <TableCell>{formatDate(idea.updatedAt)}</TableCell>
+                <TableCell className="text-right">
+                  <Link
+                    href={`/idea/${idea.id}`}
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                  >
+                    View Idea
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </section>
   );

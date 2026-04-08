@@ -1,7 +1,16 @@
-﻿"use client";
+"use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useIdeasQuery } from "@/features/idea";
 import { useMyBookmarksQuery, useRemoveBookmarkMutation } from "@/features/interaction";
 import { getApiErrorMessage } from "@/lib/errors/api-error";
@@ -20,6 +29,18 @@ function getIdeaTitle(idea?: Idea) {
 
 function getBookmarkIdeaId(bookmark: Bookmark) {
   return typeof bookmark.ideaId === "string" ? bookmark.ideaId : "";
+}
+
+function formatLabel(value?: string | null, fallback = "N/A") {
+  if (typeof value !== "string" || !value.trim()) {
+    return fallback;
+  }
+
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 export default function SavedIdeasPage() {
@@ -66,44 +87,65 @@ export default function SavedIdeasPage() {
         </p>
       </div>
 
-      <ul className="space-y-3">
-        {bookmarks.map((bookmark) => {
-          const ideaId = getBookmarkIdeaId(bookmark);
-          const idea = ideaMap.get(ideaId);
-          const isRemoving =
-            removeBookmarkMutation.isPending &&
-            removeBookmarkMutation.variables?.ideaId === ideaId;
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Idea</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead>Idea ID</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {bookmarks.map((bookmark) => {
+            const ideaId = getBookmarkIdeaId(bookmark);
+            const idea = ideaMap.get(ideaId);
+            const isRemoving =
+              removeBookmarkMutation.isPending &&
+              removeBookmarkMutation.variables?.ideaId === ideaId;
 
-          return (
-            <li key={bookmark.id} className="rounded-xl border bg-background p-4">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="space-y-1">
-                  <p className="font-medium">{getIdeaTitle(idea)}</p>
-                  <p className="text-sm text-muted-foreground">Idea ID: {ideaId || "N/A"}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Status: {idea?.status ?? "Unknown"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Category: {idea?.category?.name ?? "Uncategorized"}
-                  </p>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isRemoving || !ideaId}
-                  onClick={() => {
-                    removeBookmarkMutation.mutate({ ideaId });
-                  }}
-                >
-                  {isRemoving ? "Removing..." : "Remove bookmark"}
-                </Button>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+            return (
+              <TableRow key={bookmark.id}>
+                <TableCell className="min-w-72">
+                  <div className="space-y-1">
+                    <p className="font-medium text-slate-950">{getIdeaTitle(idea)}</p>
+                    <p className="text-sm text-slate-600">
+                      {idea?.excerpt ?? idea?.description ?? "No summary available."}
+                    </p>
+                  </div>
+                </TableCell>
+                <TableCell>{formatLabel(idea?.status, "Unknown")}</TableCell>
+                <TableCell>{idea?.category?.name ?? "Uncategorized"}</TableCell>
+                <TableCell className="font-mono text-xs">{ideaId || "N/A"}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    {ideaId ? (
+                      <Link
+                        href={`/idea/${ideaId}`}
+                        className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
+                      >
+                        View
+                      </Link>
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isRemoving || !ideaId}
+                      onClick={() => {
+                        removeBookmarkMutation.mutate({ ideaId });
+                      }}
+                    >
+                      {isRemoving ? "Removing..." : "Remove"}
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </section>
   );
 }
-
