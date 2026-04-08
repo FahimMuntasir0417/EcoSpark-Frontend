@@ -11,8 +11,11 @@ import {
   getMyPurchasesQueryOptions,
   useCreateCheckoutSessionMutation,
 } from "@/features/commerce";
+import {
+  getCurrentPurchaseForIdea,
+  isPaidIdeaAccessType,
+} from "@/features/commerce/utils/purchase-access";
 import { getApiErrorMessage } from "@/lib/errors/api-error";
-import type { Purchase } from "@/services/commerce.service";
 import type { Idea } from "@/services/idea.service";
 
 type Feedback = {
@@ -62,20 +65,6 @@ function formatCurrency(amount: number | null, currency?: string | null) {
 
   const resolvedCurrency = hasText(currency) ? currency!.trim().toUpperCase() : "USD";
   return `${amount.toLocaleString()} ${resolvedCurrency}`;
-}
-
-function getPurchaseIdeaId(purchase: Purchase) {
-  const record = purchase as unknown as Record<string, unknown>;
-  const nestedIdea =
-    record.idea && typeof record.idea === "object"
-      ? (record.idea as Record<string, unknown>)
-      : null;
-
-  return (
-    (typeof purchase.ideaId === "string" && purchase.ideaId) ||
-    (nestedIdea && typeof nestedIdea.id === "string" && nestedIdea.id) ||
-    ""
-  );
 }
 
 function FeedbackBanner({ feedback }: { feedback: Feedback }) {
@@ -142,14 +131,10 @@ export function IdeaPurchasePanel({
   const [feedback, setFeedback] = useState<Feedback>(null);
 
   const checkoutState = searchParams.get("checkout");
-  const isPaidIdea = idea.accessType === "PAID";
+  const isPaidIdea = isPaidIdeaAccessType(idea.accessType);
   const ideaPrice = getIdeaPrice(idea);
   const purchases = purchasesQuery.data?.data ?? [];
-  const relatedPurchases = purchases.filter((purchase) => getPurchaseIdeaId(purchase) === idea.id);
-  const currentPurchase =
-    relatedPurchases.find((purchase) => purchase.status === "PAID") ??
-    relatedPurchases.find((purchase) => purchase.status === "PENDING") ??
-    relatedPurchases[0];
+  const currentPurchase = getCurrentPurchaseForIdea(purchases, idea.id);
   const purchaseStatus = typeof currentPurchase?.status === "string" ? currentPurchase.status : null;
   const isPurchased = purchaseStatus === "PAID";
   const hasPendingCheckout = purchaseStatus === "PENDING";

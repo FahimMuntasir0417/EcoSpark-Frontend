@@ -5,6 +5,7 @@ import { isAxiosError } from "axios";
 import {
   ArrowLeft,
   Bookmark,
+  Lock,
   Pencil,
   Reply,
   Send,
@@ -17,14 +18,15 @@ import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
+import { getMyPurchasesQueryOptions } from "@/features/commerce";
 import { useIdeaByIdQuery } from "@/features/idea";
 import {
+  getIdeaCommentsQueryOptions,
   getMyBookmarksQueryOptions,
   useBookmarkIdeaMutation,
   useCommentRepliesQuery,
   useCreateCommentMutation,
   useDeleteCommentMutation,
-  useIdeaCommentsQuery,
   useRemoveBookmarkMutation,
   useRemoveVoteMutation,
   useReplyToCommentMutation,
@@ -32,6 +34,10 @@ import {
   useUpdateVoteMutation,
   useVoteIdeaMutation,
 } from "@/features/interaction";
+import {
+  getCurrentPurchaseForIdea,
+  isPaidIdeaAccessType,
+} from "@/features/commerce/utils/purchase-access";
 import { normalizeUserRole, type UserRole } from "@/lib/authUtils";
 import { getApiErrorMessage, normalizeApiError } from "@/lib/errors/api-error";
 import { cn } from "@/lib/utils";
@@ -124,6 +130,20 @@ function getIdeaSummary(idea: Idea) {
   }
 
   return "No summary has been added for this idea yet.";
+}
+
+function getIdeaAuthorId(idea: Idea) {
+  const record = idea as unknown as Record<string, unknown>;
+  const author =
+    record.author && typeof record.author === "object"
+      ? (record.author as Record<string, unknown>)
+      : null;
+
+  return (
+    (typeof idea.authorId === "string" && idea.authorId) ||
+    (author && typeof author.id === "string" && author.id) ||
+    ""
+  );
 }
 
 function extractCurrentVote(idea: Idea): VoteType | null {
@@ -558,10 +578,17 @@ function CommentThreadItem({
 
 export function IdeaDetailClient({ ideaId, isAuthenticated, role }: IdeaDetailClientProps) {
   const ideaQuery = useIdeaByIdQuery(ideaId);
+  const idea = ideaQuery.data?.data;
+  const isPaidIdea = isPaidIdeaAccessType(idea?.accessType);
   const viewerQuery = useQuery({
     queryKey: ["users", "me"],
     queryFn: () => userService.getMe(),
     enabled: isAuthenticated,
+    retry: false,
+  });
+  const purchasesQuery = useQuery({
+    ...getMyPurchasesQueryOptions(),
+    enabled: isAuthenticated && isPaidIdea,
     retry: false,
   });
 
@@ -569,12 +596,30 @@ export function IdeaDetailClient({ ideaId, isAuthenticated, role }: IdeaDetailCl
     typeof viewerQuery.data?.data?.role === "string" ? viewerQuery.data.data.role : null,
   );
   const effectiveRole = viewerRole ?? role;
-
+  const viewerId = viewerQuery.data?.data?.id ?? "";
+  const viewerQueryError = viewerQuery.error ? normalizeApiError(viewerQuery.error) : null;
+  const purchases = purchasesQuery.data?.data ?? [];
+  const currentPurchase = idea ? getCurrentPurchaseForIdea(purchases, idea.id) : null;
+  const purchaseStatus = typeof currentPurchase?.status === "string" ? currentPurchase.status : null;
+  const isPurchased = purchaseStatus === "PAID";
+  const hasPendingCheckout = purchaseStatus === "PENDING";
+  const ideaAuthorId = idea ? getIdeaAuthorId(idea) : "";
+  const isIdeaAuthor = Boolean(viewerId && ideaAuthorId && viewerId === ideaAuthorId);
+  const hasPrivilegedAccess =
+    effectiveRole === "SUPER_ADMIN" ||
+    effectiveRole === "ADMIN" ||
+    isIdeaAuthor;
+  const canLoadProtectedData =
+    Boolean(idea?.id) &&
+    (!isPaidIdea || hasPrivilegedAccess || isPurchased);
   const bookmarksQuery = useQuery({
     ...getMyBookmarksQueryOptions(),
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && canLoadProtectedData,
   });
-  const commentsQuery = useIdeaCommentsQuery(ideaId);
+  const commentsQuery = useQuery({
+    ...getIdeaCommentsQueryOptions(ideaId),
+    enabled: canLoadProtectedData,
+  });
 
   const voteIdeaMutation = useVoteIdeaMutation();
   const updateVoteMutation = useUpdateVoteMutation();
@@ -586,10 +631,7 @@ export function IdeaDetailClient({ ideaId, isAuthenticated, role }: IdeaDetailCl
   const [interactionFeedback, setInteractionFeedback] = useState<Feedback>(null);
   const [commentDraft, setCommentDraft] = useState("");
 
-  const idea = ideaQuery.data?.data;
   const bookmarks = bookmarksQuery.data?.data ?? [];
-  const viewerId = viewerQuery.data?.data?.id ?? "";
-  const viewerQueryError = viewerQuery.error ? normalizeApiError(viewerQuery.error) : null;
 
   if (!ideaId) {
     return (
@@ -636,6 +678,13 @@ export function IdeaDetailClient({ ideaId, isAuthenticated, role }: IdeaDetailCl
   const isBookmarked = detectedBookmark;
   const isIdeaInteractive = isIdeaInteractiveStatus(idea.status, idea.publishedAt);
   const hasBrowserAuthIssue = Boolean(isAuthenticated && viewerQueryError?.statusCode === 401);
+  const isPurchaseStatusPending = isPaidIdea && isAuthenticated && purchasesQuery.isPending;
+  const shouldShowPurchasePanel = isPaidIdea && !hasPrivilegedAccess;
+  const hasPaidIdeaAccess =
+    !isPaidIdea ||
+    hasPrivilegedAccess ||
+    (!isPurchaseStatusPending && !purchasesQuery.isError && isPurchased);
+  const isDetailLocked = isPaidIdea && !hasPaidIdeaAccess;
 
   const commentRecords = commentsQuery.data?.data ?? [];
   const topLevelComments = commentRecords.filter((comment) => !comment.parentId);
@@ -829,6 +878,30 @@ export function IdeaDetailClient({ ideaId, isAuthenticated, role }: IdeaDetailCl
     }
   };
 
+  const lockedDetailsTitle = isPurchaseStatusPending
+    ? "Checking paid access"
+    : "Purchase required";
+  const lockedDetailsDescription = isPurchaseStatusPending
+    ? "Loading your purchase status before protected idea details are shown."
+    : hasBrowserAuthIssue
+      ? "Your browser session is out of sync. Log out and sign in again before opening paid idea details."
+      : !isAuthenticated
+        ? "Sign in and complete the purchase before opening the protected idea workspace."
+        : purchasesQuery.isError
+          ? "We could not verify your purchase status. Retry the purchase lookup before protected details are shown."
+          : hasPendingCheckout
+            ? "Your checkout is still pending. Open the payment status page or finish the payment to unlock the full idea."
+            : "This paid idea stays locked until the purchase is marked as paid.";
+  const lockedStatusLabel = hasPrivilegedAccess
+    ? "Owner access"
+    : isPurchaseStatusPending
+      ? "Checking purchase"
+      : purchaseStatus
+        ? formatBadgeLabel(purchaseStatus)
+        : isAuthenticated
+          ? "Not purchased"
+          : "Login required";
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -859,168 +932,231 @@ export function IdeaDetailClient({ ideaId, isAuthenticated, role }: IdeaDetailCl
           </div>
 
           <div className="space-y-6 p-6 lg:p-8">
-            <div className="flex flex-wrap gap-3">
-              <StatCard label="Author" value={formatText(idea.author?.name, "Unknown author")} />
-              <StatCard label="Category" value={formatText(idea.category?.name, "Uncategorized")} />
-              <StatCard label="Last activity" value={formatDate(idea.lastActivityAt, "Not recorded")} />
-            </div>
+            {isDetailLocked ? (
+              <>
+                <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
+                      <Lock className="size-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                        Protected detail page
+                      </p>
+                      <h2 className="mt-2 text-xl font-semibold text-slate-950">
+                        {lockedDetailsTitle}
+                      </h2>
+                      <p className="mt-2 text-sm leading-7 text-slate-600">
+                        {lockedDetailsDescription}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard label="Views" value={formatMetric(idea.totalViews)} />
-              <StatCard label="Impact" value={formatMetric(idea.impactScore)} />
-              <StatCard label="Eco score" value={formatMetric(idea.ecoScore)} />
-              <StatCard label="Comments" value={formatMetric(idea.totalComments)} />
-            </div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <StatCard label="Access" value={formatBadgeLabel(idea.accessType)} />
+                  <StatCard label="Purchase" value={lockedStatusLabel} />
+                  <StatCard
+                    label="Viewer"
+                    value={
+                      hasPrivilegedAccess
+                        ? "Privileged"
+                        : isAuthenticated
+                          ? "Signed in"
+                          : "Guest"
+                    }
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-wrap gap-3">
+                  <StatCard label="Author" value={formatText(idea.author?.name, "Unknown author")} />
+                  <StatCard label="Category" value={formatText(idea.category?.name, "Uncategorized")} />
+                  <StatCard label="Last activity" value={formatDate(idea.lastActivityAt, "Not recorded")} />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <StatCard label="Views" value={formatMetric(idea.totalViews)} />
+                  <StatCard label="Impact" value={formatMetric(idea.impactScore)} />
+                  <StatCard label="Eco score" value={formatMetric(idea.ecoScore)} />
+                  <StatCard label="Comments" value={formatMetric(idea.totalComments)} />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>
 
-      <IdeaPurchasePanel
-        idea={idea}
-        isAuthenticated={isAuthenticated}
-        hasBrowserAuthIssue={hasBrowserAuthIssue}
-      />
+      {shouldShowPurchasePanel ? (
+        <IdeaPurchasePanel
+          idea={idea}
+          isAuthenticated={isAuthenticated}
+          hasBrowserAuthIssue={hasBrowserAuthIssue}
+        />
+      ) : null}
 
-      <section className="space-y-5 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-slate-950">Interaction workspace</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">Vote, save, and discuss this idea from one place.</p>
+      {isDetailLocked ? (
+        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+          <div className="flex items-start gap-3">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
+              <Lock className="size-5" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-950">
+                Full idea details are locked
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
+                Purchase access before the full proposal, interaction workspace,
+                and discussion area can be opened from this route.
+              </p>
+            </div>
           </div>
-          <Badge tone={isAuthenticated ? "accent" : "neutral"}>
-            {isAuthenticated ? `Signed in${effectiveRole ? ` as ${formatBadgeLabel(effectiveRole)}` : ""}` : "Guest mode"}
-          </Badge>
-        </div>
+        </section>
+      ) : (
+        <>
+          <section className="space-y-5 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold text-slate-950">Interaction workspace</h2>
+                <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">Vote, save, and discuss this idea from one place.</p>
+              </div>
+              <Badge tone={isAuthenticated ? "accent" : "neutral"}>
+                {isAuthenticated ? `Signed in${effectiveRole ? ` as ${formatBadgeLabel(effectiveRole)}` : ""}` : "Guest mode"}
+              </Badge>
+            </div>
 
-        <FeedbackBanner feedback={interactionFeedback} />
+            <FeedbackBanner feedback={interactionFeedback} />
 
-        {!isIdeaInteractive ? (
-          <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            This idea is currently <strong>{formatBadgeLabel(idea.status)}</strong>. Interaction actions are only enabled for published ideas.
-          </p>
-        ) : null}
+            {!isIdeaInteractive ? (
+              <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                This idea is currently <strong>{formatBadgeLabel(idea.status)}</strong>. Interaction actions are only enabled for published ideas.
+              </p>
+            ) : null}
 
-        {hasBrowserAuthIssue ? (
-          <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            You appear signed in on the page, but browser API auth is missing. Log out and sign in again to use vote, save, and comment actions.
-          </p>
-        ) : null}
+            {hasBrowserAuthIssue ? (
+              <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                You appear signed in on the page, but browser API auth is missing. Log out and sign in again to use vote, save, and comment actions.
+              </p>
+            ) : null}
 
-        <div className="grid gap-4 xl:grid-cols-2">
-          <ActionCard title="Vote" description="Support the idea, switch your vote, or remove it entirely." icon={ThumbsUp}>
+            <div className="grid gap-4 xl:grid-cols-2">
+              <ActionCard title="Vote" description="Support the idea, switch your vote, or remove it entirely." icon={ThumbsUp}>
+                {!isAuthenticated ? (
+                  <GuestPrompt title="Sign in to vote" description="Voting is available to signed-in users so the platform can track your current vote." />
+                ) : (
+                  <>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <StatCard label="Current vote" value={currentVote ?? "Not detected"} />
+                      <StatCard label="Upvotes" value={formatMetric(idea.totalUpvotes)} />
+                      <StatCard label="Downvotes" value={formatMetric(idea.totalDownvotes)} />
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant={currentVote === "UP" ? "default" : "outline"} disabled={voteBusy || !isIdeaInteractive || hasBrowserAuthIssue} onClick={() => { void submitVote("UP"); }}>
+                        <ThumbsUp className="size-4" />
+                        Upvote
+                      </Button>
+                      <Button type="button" variant={currentVote === "DOWN" ? "default" : "outline"} disabled={voteBusy || !isIdeaInteractive || hasBrowserAuthIssue} onClick={() => { void submitVote("DOWN"); }}>
+                        <ThumbsDown className="size-4" />
+                        Downvote
+                      </Button>
+                      <Button type="button" variant="ghost" disabled={voteBusy || !currentVote || !isIdeaInteractive || hasBrowserAuthIssue} onClick={() => { void submitVote(currentVote === "UP" ? "UP" : "DOWN"); }}>
+                        Remove vote
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </ActionCard>
+
+              <ActionCard title="Save" description="Bookmark the idea and keep it in your saved list." icon={Bookmark}>
+                {!isAuthenticated ? (
+                  <GuestPrompt title="Sign in to save ideas" description="Bookmarks are tied to your account, so guest visitors cannot create or remove them." />
+                ) : bookmarksQuery.isError ? (
+                  <ErrorState
+                    title="Could not load bookmarks"
+                    description={getApiErrorMessage(bookmarksQuery.error)}
+                    onRetry={() => {
+                      void bookmarksQuery.refetch();
+                    }}
+                  />
+                ) : (
+                  <>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Save state</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-950">{isBookmarked ? "Saved to your bookmarks" : "Not saved yet"}</p>
+                      <p className="mt-2 text-sm text-slate-600">Total bookmarks on this idea: {formatMetric(idea.totalBookmarks)}</p>
+                    </div>
+                    <Button type="button" variant={isBookmarked ? "default" : "outline"} disabled={bookmarkBusy || bookmarksQuery.isPending || !isIdeaInteractive || hasBrowserAuthIssue} onClick={() => { void toggleBookmark(); }}>
+                      <Bookmark className="size-4" />
+                      {bookmarkBusy ? (isBookmarked ? "Removing..." : "Saving...") : isBookmarked ? "Remove bookmark" : "Save idea"}
+                    </Button>
+                  </>
+                )}
+              </ActionCard>
+            </div>
+          </section>
+
+          <section className="space-y-5 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold text-slate-950">Discussion</h2>
+                <p className="mt-2 text-sm leading-7 text-slate-600">Join the thread, add replies, or manage your own comments.</p>
+              </div>
+              <Badge>{commentsQuery.data?.data?.length ?? 0} comments</Badge>
+            </div>
+
             {!isAuthenticated ? (
-              <GuestPrompt title="Sign in to vote" description="Voting is available to signed-in users so the platform can track your current vote." />
+              <GuestPrompt title="Sign in to join the discussion" description="Comments and replies are available to signed-in users." />
             ) : (
-              <>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <StatCard label="Current vote" value={currentVote ?? "Not detected"} />
-                  <StatCard label="Upvotes" value={formatMetric(idea.totalUpvotes)} />
-                  <StatCard label="Downvotes" value={formatMetric(idea.totalDownvotes)} />
-                </div>
-
+              <div className="space-y-3 rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-5">
+                <p className="text-sm font-semibold text-slate-950">Add a comment</p>
+                <textarea className="min-h-28 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100" value={commentDraft} onChange={(event) => setCommentDraft(event.target.value)} placeholder="Share your thoughts about this idea" disabled={!isIdeaInteractive || hasBrowserAuthIssue} />
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant={currentVote === "UP" ? "default" : "outline"} disabled={voteBusy || !isIdeaInteractive || hasBrowserAuthIssue} onClick={() => { void submitVote("UP"); }}>
-                    <ThumbsUp className="size-4" />
-                    Upvote
-                  </Button>
-                  <Button type="button" variant={currentVote === "DOWN" ? "default" : "outline"} disabled={voteBusy || !isIdeaInteractive || hasBrowserAuthIssue} onClick={() => { void submitVote("DOWN"); }}>
-                    <ThumbsDown className="size-4" />
-                    Downvote
-                  </Button>
-                  <Button type="button" variant="ghost" disabled={voteBusy || !currentVote || !isIdeaInteractive || hasBrowserAuthIssue} onClick={() => { void submitVote(currentVote === "UP" ? "UP" : "DOWN"); }}>
-                    Remove vote
+                  <Button type="button" disabled={createCommentMutation.isPending || !isIdeaInteractive || hasBrowserAuthIssue} onClick={() => { void submitComment(); }}>
+                    <Send className="size-4" />
+                    {createCommentMutation.isPending ? "Posting..." : "Post comment"}
                   </Button>
                 </div>
-              </>
+              </div>
             )}
-          </ActionCard>
 
-          <ActionCard title="Save" description="Bookmark the idea and keep it in your saved list." icon={Bookmark}>
-            {!isAuthenticated ? (
-              <GuestPrompt title="Sign in to save ideas" description="Bookmarks are tied to your account, so guest visitors cannot create or remove them." />
-            ) : bookmarksQuery.isError ? (
+            {commentsQuery.isPending ? (
+              <LoadingState rows={4} title="Loading comments" description="Fetching discussion for this idea." />
+            ) : commentsQuery.isError ? (
               <ErrorState
-                title="Could not load bookmarks"
-                description={getApiErrorMessage(bookmarksQuery.error)}
+                title="Could not load comments"
+                description={getApiErrorMessage(commentsQuery.error)}
                 onRetry={() => {
-                  void bookmarksQuery.refetch();
+                  void commentsQuery.refetch();
                 }}
               />
+            ) : visibleComments.length === 0 ? (
+              <EmptyState title="No comments yet" description="Be the first person to start the discussion for this idea." />
             ) : (
-              <>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Save state</p>
-                  <p className="mt-2 text-lg font-semibold text-slate-950">{isBookmarked ? "Saved to your bookmarks" : "Not saved yet"}</p>
-                  <p className="mt-2 text-sm text-slate-600">Total bookmarks on this idea: {formatMetric(idea.totalBookmarks)}</p>
-                </div>
-                <Button type="button" variant={isBookmarked ? "default" : "outline"} disabled={bookmarkBusy || bookmarksQuery.isPending || !isIdeaInteractive || hasBrowserAuthIssue} onClick={() => { void toggleBookmark(); }}>
-                  <Bookmark className="size-4" />
-                  {bookmarkBusy ? (isBookmarked ? "Removing..." : "Saving...") : isBookmarked ? "Remove bookmark" : "Save idea"}
-                </Button>
-              </>
+              <div className="space-y-4">
+                {visibleComments.map((comment) => (
+                  <CommentThreadItem
+                    key={comment.id}
+                    comment={comment}
+                    viewerId={viewerId}
+                    isAuthenticated={isAuthenticated}
+                    isIdeaInteractive={isIdeaInteractive}
+                    onFeedback={setInteractionFeedback}
+                  />
+                ))}
+              </div>
             )}
-          </ActionCard>
-        </div>
-      </section>
+          </section>
 
-      <section className="space-y-5 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-slate-950">Discussion</h2>
-            <p className="mt-2 text-sm leading-7 text-slate-600">Join the thread, add replies, or manage your own comments.</p>
-          </div>
-          <Badge>{commentsQuery.data?.data?.length ?? 0} comments</Badge>
-        </div>
-
-        {!isAuthenticated ? (
-          <GuestPrompt title="Sign in to join the discussion" description="Comments and replies are available to signed-in users." />
-        ) : (
-          <div className="space-y-3 rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-5">
-            <p className="text-sm font-semibold text-slate-950">Add a comment</p>
-            <textarea className="min-h-28 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100" value={commentDraft} onChange={(event) => setCommentDraft(event.target.value)} placeholder="Share your thoughts about this idea" disabled={!isIdeaInteractive || hasBrowserAuthIssue} />
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" disabled={createCommentMutation.isPending || !isIdeaInteractive || hasBrowserAuthIssue} onClick={() => { void submitComment(); }}>
-                <Send className="size-4" />
-                {createCommentMutation.isPending ? "Posting..." : "Post comment"}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {commentsQuery.isPending ? (
-          <LoadingState rows={4} title="Loading comments" description="Fetching discussion for this idea." />
-        ) : commentsQuery.isError ? (
-          <ErrorState
-            title="Could not load comments"
-            description={getApiErrorMessage(commentsQuery.error)}
-            onRetry={() => {
-              void commentsQuery.refetch();
-            }}
-          />
-        ) : visibleComments.length === 0 ? (
-          <EmptyState title="No comments yet" description="Be the first person to start the discussion for this idea." />
-        ) : (
-          <div className="space-y-4">
-            {visibleComments.map((comment) => (
-              <CommentThreadItem
-                key={comment.id}
-                comment={comment}
-                viewerId={viewerId}
-                isAuthenticated={isAuthenticated}
-                isIdeaInteractive={isIdeaInteractive}
-                onFeedback={setInteractionFeedback}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Views" value={formatMetric(idea.totalViews)} />
-        <StatCard label="Last activity" value={formatDate(idea.lastActivityAt, "Not recorded")} />
-        <StatCard label="Eco score" value={formatMetric(idea.ecoScore)} />
-        <StatCard label="Author role" value={formatText(idea.author?.role)} />
-      </section>
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="Views" value={formatMetric(idea.totalViews)} />
+            <StatCard label="Last activity" value={formatDate(idea.lastActivityAt, "Not recorded")} />
+            <StatCard label="Eco score" value={formatMetric(idea.ecoScore)} />
+            <StatCard label="Author role" value={formatText(idea.author?.role)} />
+          </section>
+        </>
+      )}
     </main>
   );
 }

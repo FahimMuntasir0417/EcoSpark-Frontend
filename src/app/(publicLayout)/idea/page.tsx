@@ -1,10 +1,12 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   CalendarClock,
   Eye,
   Leaf,
+  Lock,
   Search,
   Sparkles,
   UserRound,
@@ -23,7 +25,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { getMyPurchasesQueryOptions } from "@/features/commerce";
 import { useIdeasQuery } from "@/features/idea";
+import {
+  getCurrentPurchaseForIdea,
+  isPaidIdeaAccessType,
+} from "@/features/commerce/utils/purchase-access";
+import { getAccessToken, getUserRole } from "@/lib/auth/session";
+import { normalizeUserRole } from "@/lib/authUtils";
 import { getApiErrorMessage } from "@/lib/errors/api-error";
 import { cn } from "@/lib/utils";
 import type { Idea } from "@/services/idea.service";
@@ -226,6 +235,8 @@ export default function IdeaPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchInputValue, setSearchInputValue] = useState("");
   const [appliedSearchValue, setAppliedSearchValue] = useState("");
+  const [hasClientAuth, setHasClientAuth] = useState(false);
+  const [clientRole, setClientRole] = useState<ReturnType<typeof normalizeUserRole>>(null);
 
   const ideasQueryParams = useMemo(() => {
     const normalizedSearch = appliedSearchValue.trim();
@@ -239,6 +250,16 @@ export default function IdeaPage() {
   }, [appliedSearchValue]);
 
   const ideasQuery = useIdeasQuery(ideasQueryParams);
+  const purchasesQuery = useQuery({
+    ...getMyPurchasesQueryOptions(),
+    enabled: hasClientAuth,
+    retry: false,
+  });
+
+  useEffect(() => {
+    setHasClientAuth(Boolean(getAccessToken()));
+    setClientRole(normalizeUserRole(getUserRole()));
+  }, []);
 
   useEffect(() => {
     const normalizedSearch = searchInputValue.trim();
@@ -255,6 +276,7 @@ export default function IdeaPage() {
   }, [searchInputValue]);
 
   const ideas = ideasQuery.data?.data ?? [];
+  const purchases = purchasesQuery.data?.data ?? [];
   const totalIdeas = ideas.length;
   const totalPages = getTotalPages(
     totalIdeas > 0 ? Math.ceil(totalIdeas / IDEAS_PAGE_SIZE) : 1,
@@ -314,8 +336,8 @@ export default function IdeaPage() {
               Browse ideas ready for review, adoption, or purchase.
             </h1>
             <p className="max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
-              Open each idea to inspect the full proposal, author, category,
-              scores, timeline, impact metrics, and publishing details.
+              Free ideas open immediately. Paid ideas stay locked until the
+              purchase is recorded as paid.
             </p>
             {ideasQuery.data?.message ? (
               <p className="text-sm text-slate-500">{ideasQuery.data.message}</p>
@@ -426,79 +448,129 @@ export default function IdeaPage() {
         />
       ) : (
         <section className="grid gap-6">
-          {pageIdeas.map((idea) => (
-            <article
-              key={idea.id}
-              className="surface-card overflow-hidden"
-            >
-              <div className="grid gap-0 lg:grid-cols-[19rem_minmax(0,1fr)]">
-                <div className="relative min-h-60 overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_45%,#0ea5e9_100%)]">
-                  {hasText(idea.coverImageUrl) ? (
-                    <div
-                      className="absolute inset-0 bg-cover bg-center opacity-80"
-                      style={{ backgroundImage: `url(${idea.coverImageUrl})` }}
-                    />
-                  ) : null}
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.15),rgba(15,23,42,0.88))]" />
-                  <div className="relative flex h-full flex-col justify-end p-5 text-white">
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-200">
-                      {idea.category?.name ?? "Uncategorized"}
-                    </p>
-                    <h2 className="mt-3 text-2xl font-semibold leading-tight">
-                      {getIdeaTitle(idea)}
-                    </h2>
-                    <p className="mt-3 text-sm leading-6 text-slate-200">
-                      {getIdeaSummary(idea)}
-                    </p>
+          {pageIdeas.map((idea) => {
+            const isPaidIdea = isPaidIdeaAccessType(idea.accessType);
+            const currentPurchase = isPaidIdea
+              ? getCurrentPurchaseForIdea(purchases, idea.id)
+              : null;
+            const purchaseStatus =
+              typeof currentPurchase?.status === "string"
+                ? currentPurchase.status
+                : null;
+            const isPurchased = purchaseStatus === "PAID";
+            const canOpenDetails = !isPaidIdea || isPurchased;
+            const actionHref = canOpenDetails
+              ? `/idea/${idea.id}`
+              : !hasClientAuth
+                ? "/login"
+                : clientRole === "MEMBER"
+                  ? "/dashboard/purches-idea"
+                  : `/idea/${idea.id}`;
+            const actionLabel = canOpenDetails
+              ? "Open details"
+              : !hasClientAuth
+                ? "Login to unlock"
+                : clientRole === "MEMBER"
+                  ? "Purchase access"
+                  : "Unlock access";
+            const actionDescription = isPaidIdea
+              ? canOpenDetails
+                ? "Paid access confirmed."
+                : purchaseStatus === "PENDING"
+                  ? "Payment is pending. Verify it before details unlock."
+                  : "Protected details stay locked until purchase is complete."
+              : "Public idea details are available now.";
+
+            return (
+              <article
+                key={idea.id}
+                className="surface-card overflow-hidden"
+              >
+                <div className="grid gap-0 lg:grid-cols-[19rem_minmax(0,1fr)]">
+                  <div className="relative min-h-60 overflow-hidden bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_45%,#0ea5e9_100%)]">
+                    {hasText(idea.coverImageUrl) ? (
+                      <div
+                        className="absolute inset-0 bg-cover bg-center opacity-80"
+                        style={{ backgroundImage: `url(${idea.coverImageUrl})` }}
+                      />
+                    ) : null}
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.15),rgba(15,23,42,0.88))]" />
+                    <div className="relative flex h-full flex-col justify-end p-5 text-white">
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-200">
+                        {idea.category?.name ?? "Uncategorized"}
+                      </p>
+                      <h2 className="mt-3 text-2xl font-semibold leading-tight">
+                        {getIdeaTitle(idea)}
+                      </h2>
+                      <p className="mt-3 text-sm leading-6 text-slate-200">
+                        {getIdeaSummary(idea)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6 p-6 lg:p-7">
+                    <div className="flex flex-wrap gap-2">
+                      <Badge tone="success">{formatBadgeLabel(idea.status)}</Badge>
+                      <Badge>{formatBadgeLabel(idea.visibility)}</Badge>
+                      <Badge>{formatBadgeLabel(idea.accessType)}</Badge>
+                      {isPaidIdea ? (
+                        <Badge tone={canOpenDetails ? "success" : "accent"}>
+                          {canOpenDetails ? "Purchased access" : "Purchase required"}
+                        </Badge>
+                      ) : null}
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                      <StatCard label="Price" value={formatPrice(idea)} />
+                      <StatCard label="Impact Score" value={formatMetric(idea.impactScore)} />
+                      <StatCard label="Eco Score" value={formatMetric(idea.ecoScore)} />
+                      <StatCard label="Views" value={formatMetric(idea.totalViews)} />
+                    </div>
+
+                    <div className="grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+                      <p className="flex items-center gap-2">
+                        <UserRound className="size-4 text-slate-400" />
+                        {idea.author?.name ?? "Unknown author"}
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <CalendarClock className="size-4 text-slate-400" />
+                        Updated {formatDate(idea.updatedAt)}
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <Leaf className="size-4 text-slate-400" />
+                        CO2 {formatMetric(idea.estimatedCo2ReductionKgMonth, " kg/month")}
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <Eye className="size-4 text-slate-400" />
+                        {formatMetric(idea.uniqueViews)} unique views
+                      </p>
+                    </div>
+
+                    <div>
+                      <Link
+                        href={actionHref}
+                        prefetch={canOpenDetails ? undefined : false}
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-colors",
+                          canOpenDetails
+                            ? "bg-slate-950 text-white hover:bg-slate-800"
+                            : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-950",
+                        )}
+                      >
+                        {actionLabel}
+                        {canOpenDetails ? (
+                          <ArrowRight className="size-4" />
+                        ) : (
+                          <Lock className="size-4" />
+                        )}
+                      </Link>
+                      <p className="mt-3 text-xs text-slate-500">{actionDescription}</p>
+                    </div>
                   </div>
                 </div>
-
-                <div className="space-y-6 p-6 lg:p-7">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge tone="success">{formatBadgeLabel(idea.status)}</Badge>
-                    <Badge>{formatBadgeLabel(idea.visibility)}</Badge>
-                    <Badge>{formatBadgeLabel(idea.accessType)}</Badge>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <StatCard label="Price" value={formatPrice(idea)} />
-                    <StatCard label="Impact Score" value={formatMetric(idea.impactScore)} />
-                    <StatCard label="Eco Score" value={formatMetric(idea.ecoScore)} />
-                    <StatCard label="Views" value={formatMetric(idea.totalViews)} />
-                  </div>
-
-                  <div className="grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
-                    <p className="flex items-center gap-2">
-                      <UserRound className="size-4 text-slate-400" />
-                      {idea.author?.name ?? "Unknown author"}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <CalendarClock className="size-4 text-slate-400" />
-                      Updated {formatDate(idea.updatedAt)}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <Leaf className="size-4 text-slate-400" />
-                      CO2 {formatMetric(idea.estimatedCo2ReductionKgMonth, " kg/month")}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <Eye className="size-4 text-slate-400" />
-                      {formatMetric(idea.uniqueViews)} unique views
-                    </p>
-                  </div>
-
-                  <div>
-                    <Link
-                      href={`/idea/${idea.id}`}
-                      className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
-                    >
-                      Open details
-                      <ArrowRight className="size-4" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </section>
       )}
 
