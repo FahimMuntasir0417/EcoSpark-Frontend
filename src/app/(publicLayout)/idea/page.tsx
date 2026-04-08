@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   CalendarClock,
+  CreditCard,
   Eye,
   Leaf,
   Lock,
@@ -12,6 +13,7 @@ import {
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
@@ -25,14 +27,16 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { getMyPurchasesQueryOptions } from "@/features/commerce";
+import {
+  getMyPurchasesQueryOptions,
+  useCreateCheckoutSessionMutation,
+} from "@/features/commerce";
 import { useIdeasQuery } from "@/features/idea";
 import {
   getCurrentPurchaseForIdea,
   isPaidIdeaAccessType,
 } from "@/features/commerce/utils/purchase-access";
-import { getAccessToken, getUserRole } from "@/lib/auth/session";
-import { normalizeUserRole } from "@/lib/authUtils";
+import { getAccessToken } from "@/lib/auth/session";
 import { getApiErrorMessage } from "@/lib/errors/api-error";
 import { cn } from "@/lib/utils";
 import type { Idea } from "@/services/idea.service";
@@ -189,6 +193,11 @@ function getTotalPages(totalPages?: number, totalPage?: number) {
 
 type PaginationPageItem = number | "ellipsis";
 
+type Feedback = {
+  type: "success" | "error";
+  text: string;
+} | null;
+
 function getPaginationItems(totalPages: number, currentPage: number): PaginationPageItem[] {
   if (totalPages <= 1) {
     return [1];
@@ -232,11 +241,12 @@ function getPaginationItems(totalPages: number, currentPage: number): Pagination
 }
 
 export default function IdeaPage() {
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchInputValue, setSearchInputValue] = useState("");
   const [appliedSearchValue, setAppliedSearchValue] = useState("");
   const [hasClientAuth, setHasClientAuth] = useState(false);
-  const [clientRole, setClientRole] = useState<ReturnType<typeof normalizeUserRole>>(null);
+  const [checkoutFeedback, setCheckoutFeedback] = useState<Feedback>(null);
 
   const ideasQueryParams = useMemo(() => {
     const normalizedSearch = appliedSearchValue.trim();
@@ -255,10 +265,10 @@ export default function IdeaPage() {
     enabled: hasClientAuth,
     retry: false,
   });
+  const createCheckoutSessionMutation = useCreateCheckoutSessionMutation();
 
   useEffect(() => {
     setHasClientAuth(Boolean(getAccessToken()));
-    setClientRole(normalizeUserRole(getUserRole()));
   }, []);
 
   useEffect(() => {
@@ -295,6 +305,34 @@ export default function IdeaPage() {
     () => getPaginationItems(totalPages, activePage),
     [activePage, totalPages],
   );
+
+  const startCheckout = async (ideaId: string, purchaseId?: string) => {
+    setCheckoutFeedback(null);
+
+    if (!hasClientAuth) {
+      router.push("/login");
+      return;
+    }
+
+    if (purchaseId) {
+      router.push(`/payments/success?purchaseId=${encodeURIComponent(purchaseId)}`);
+      return;
+    }
+
+    try {
+      const response = await createCheckoutSessionMutation.mutateAsync({
+        ideaId,
+        payload: {},
+      });
+
+      window.location.assign(response.data.checkoutUrl);
+    } catch (error) {
+      setCheckoutFeedback({
+        type: "error",
+        text: getApiErrorMessage(error),
+      });
+    }
+  };
 
   if (ideasQuery.isPending) {
     return (
@@ -435,6 +473,18 @@ export default function IdeaPage() {
         <p className="text-xs text-slate-500">
           Search updates automatically while typing.
         </p>
+        {checkoutFeedback ? (
+          <p
+            className={cn(
+              "rounded-2xl border px-4 py-3 text-sm",
+              checkoutFeedback.type === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-red-200 bg-red-50 text-red-700",
+            )}
+          >
+            {checkoutFeedback.text}
+          </p>
+        ) : null}
       </section>
 
       {ideas.length === 0 ? (
@@ -458,26 +508,18 @@ export default function IdeaPage() {
                 ? currentPurchase.status
                 : null;
             const isPurchased = purchaseStatus === "PAID";
+            const hasPendingCheckout = purchaseStatus === "PENDING";
             const canOpenDetails = !isPaidIdea || isPurchased;
-            const actionHref = canOpenDetails
-              ? `/idea/${idea.id}`
-              : !hasClientAuth
-                ? "/login"
-                : clientRole === "MEMBER"
-                  ? "/dashboard/purches-idea"
-                  : `/idea/${idea.id}`;
-            const actionLabel = canOpenDetails
-              ? "Open details"
-              : !hasClientAuth
-                ? "Login to unlock"
-                : clientRole === "MEMBER"
-                  ? "Purchase access"
-                  : "Unlock access";
+            const isCheckingPaidAccess =
+              isPaidIdea && hasClientAuth && purchasesQuery.isPending;
+            const isRedirectingToCheckout =
+              createCheckoutSessionMutation.isPending &&
+              createCheckoutSessionMutation.variables?.ideaId === idea.id;
             const actionDescription = isPaidIdea
               ? canOpenDetails
                 ? "Paid access confirmed."
-                : purchaseStatus === "PENDING"
-                  ? "Payment is pending. Verify it before details unlock."
+                : hasPendingCheckout
+                  ? "Payment is pending. Verify it before the detail page opens."
                   : "Protected details stay locked until purchase is complete."
               : "Public idea details are available now.";
 
@@ -547,23 +589,42 @@ export default function IdeaPage() {
                     </div>
 
                     <div>
-                      <Link
-                        href={actionHref}
-                        prefetch={canOpenDetails ? undefined : false}
-                        className={cn(
-                          "inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-colors",
-                          canOpenDetails
-                            ? "bg-slate-950 text-white hover:bg-slate-800"
-                            : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-950",
-                        )}
-                      >
-                        {actionLabel}
-                        {canOpenDetails ? (
+                      {canOpenDetails ? (
+                        <Link
+                          href={`/idea/${idea.id}`}
+                          className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+                        >
+                          Open details
                           <ArrowRight className="size-4" />
-                        ) : (
-                          <Lock className="size-4" />
-                        )}
-                      </Link>
+                        </Link>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="rounded-full border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-700 hover:border-slate-300 hover:text-slate-950"
+                          disabled={isCheckingPaidAccess || isRedirectingToCheckout}
+                          onClick={() => {
+                            void startCheckout(idea.id, hasPendingCheckout ? currentPurchase?.id : undefined);
+                          }}
+                        >
+                          {isCheckingPaidAccess ? (
+                            "Checking purchase..."
+                          ) : isRedirectingToCheckout ? (
+                            "Redirecting..."
+                          ) : hasPendingCheckout ? (
+                            "View payment status"
+                          ) : (
+                            "Purchase access"
+                          )}
+                          {hasPendingCheckout ? (
+                            <ArrowRight className="size-4" />
+                          ) : hasClientAuth ? (
+                            <CreditCard className="size-4" />
+                          ) : (
+                            <Lock className="size-4" />
+                          )}
+                        </Button>
+                      )}
                       <p className="mt-3 text-xs text-slate-500">{actionDescription}</p>
                     </div>
                   </div>

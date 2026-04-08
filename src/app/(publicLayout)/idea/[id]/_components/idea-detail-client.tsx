@@ -890,7 +890,7 @@ export function IdeaDetailClient({ ideaId, isAuthenticated, role }: IdeaDetailCl
         : purchasesQuery.isError
           ? "We could not verify your purchase status. Retry the purchase lookup before protected details are shown."
           : hasPendingCheckout
-            ? "Your checkout is still pending. Open the payment status page or finish the payment to unlock the full idea."
+            ? "Your checkout is still pending. Open the payment status page or finish the payment before the full idea becomes available."
             : "This paid idea stays locked until the purchase is marked as paid.";
   const lockedStatusLabel = hasPrivilegedAccess
     ? "Owner access"

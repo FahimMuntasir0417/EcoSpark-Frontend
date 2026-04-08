@@ -203,7 +203,7 @@ export function IdeaPurchasePanel({
         <div>
           <h2 className="text-2xl font-semibold text-slate-950">Purchase Access</h2>
           <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-            This idea uses paid access. Start a Stripe checkout session to unlock it.
+            This idea uses paid access. Start a Stripe checkout session to purchase access.
           </p>
         </div>
         <span
