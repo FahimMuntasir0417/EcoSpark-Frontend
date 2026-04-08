@@ -1,15 +1,14 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+﻿import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   commerceService,
-  type PaymentWebhookInput,
-  type PurchaseIdeaInput,
+  type CreateCheckoutSessionInput,
   type RefundPurchaseInput,
 } from "@/services/commerce.service";
 import { commerceQueryKeys } from "./use-commerce-queries";
 
-type PurchaseIdeaVariables = {
+type CreateCheckoutSessionVariables = {
   ideaId: string;
-  payload: PurchaseIdeaInput;
+  payload?: CreateCheckoutSessionInput;
 };
 
 type PurchaseIdVariables = {
@@ -40,14 +39,14 @@ function useCommerceInvalidator() {
   };
 }
 
-export function usePurchaseIdeaMutation() {
+export function useCreateCheckoutSessionMutation() {
   const invalidate = useCommerceInvalidator();
 
   return useMutation({
-    mutationFn: ({ ideaId, payload }: PurchaseIdeaVariables) =>
-      commerceService.purchaseIdea(ideaId, payload),
-    onSuccess: async () => {
-      await invalidate();
+    mutationFn: ({ ideaId, payload }: CreateCheckoutSessionVariables) =>
+      commerceService.createCheckoutSession(ideaId, payload),
+    onSuccess: async (response) => {
+      await invalidate(response.data.purchaseId);
     },
   });
 }
@@ -71,17 +70,6 @@ export function useCancelPurchaseMutation() {
     mutationFn: ({ id }: PurchaseIdVariables) => commerceService.cancelPurchase(id),
     onSuccess: async (_data, variables) => {
       await invalidate(variables.id);
-    },
-  });
-}
-
-export function usePaymentWebhookMutation() {
-  const invalidate = useCommerceInvalidator();
-
-  return useMutation({
-    mutationFn: (payload: PaymentWebhookInput) => commerceService.paymentWebhook(payload),
-    onSuccess: async () => {
-      await invalidate();
     },
   });
 }

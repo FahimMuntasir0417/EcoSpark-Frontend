@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useQuery } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import type { Bookmark as BookmarkRecord, Comment } from "@/services/interaction.service";
 import type { Idea } from "@/services/idea.service";
 import { userService } from "@/services/user.service";
+import { IdeaPurchasePanel } from "./idea-purchase-panel";
 
 type VoteType = "UP" | "DOWN";
 
@@ -874,6 +875,12 @@ export function IdeaDetailClient({ ideaId, isAuthenticated, role }: IdeaDetailCl
         </div>
       </section>
 
+      <IdeaPurchasePanel
+        idea={idea}
+        isAuthenticated={isAuthenticated}
+        hasBrowserAuthIssue={hasBrowserAuthIssue}
+      />
+
       <section className="space-y-5 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
@@ -1017,3 +1024,5 @@ export function IdeaDetailClient({ ideaId, isAuthenticated, role }: IdeaDetailCl
     </main>
   );
 }
+
+

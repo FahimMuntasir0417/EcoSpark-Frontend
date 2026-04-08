@@ -1,10 +1,9 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import { type FormEvent, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -15,11 +14,12 @@ import {
 } from "@/components/ui/table";
 import {
   useCancelPurchaseMutation,
+  useCreateCheckoutSessionMutation,
   useMyPurchasesQuery,
-  usePurchaseIdeaMutation,
 } from "@/features/commerce";
 import { useIdeasQuery } from "@/features/idea";
 import { getApiErrorMessage } from "@/lib/errors/api-error";
+import type { Purchase } from "@/services/commerce.service";
 import type { Idea } from "@/services/idea.service";
 
 type Feedback = {
@@ -46,12 +46,17 @@ function getIdeaPrice(idea: Idea) {
   return null;
 }
 
-function formatCurrency(amount: number | null, currency?: string | null) {
-  if (amount === null) {
+function formatCurrency(amount: number | string | null | undefined, currency?: string | null) {
+  if (typeof amount === "string") {
+    const parsed = Number(amount);
+    amount = Number.isFinite(parsed) ? parsed : null;
+  }
+
+  if (typeof amount !== "number") {
     return "Price unavailable";
   }
 
-  return `${amount} ${currency || "USD"}`;
+  return `${amount.toLocaleString()} ${currency || "USD"}`;
 }
 
 function formatLabel(value?: string | null, fallback = "N/A") {
@@ -66,14 +71,30 @@ function formatLabel(value?: string | null, fallback = "N/A") {
     .join(" ");
 }
 
+function isPaidIdea(idea: Idea) {
+  return idea.accessType === "PAID";
+}
+
+function getPurchaseIdeaId(purchase: Purchase) {
+  const record = purchase as unknown as Record<string, unknown>;
+  const nestedIdea =
+    record.idea && typeof record.idea === "object"
+      ? (record.idea as Record<string, unknown>)
+      : null;
+
+  return (
+    (typeof purchase.ideaId === "string" && purchase.ideaId) ||
+    (nestedIdea && typeof nestedIdea.id === "string" && nestedIdea.id) ||
+    ""
+  );
+}
+
 export default function PurchesIdeaPage() {
   const purchasesQuery = useMyPurchasesQuery();
   const ideasQuery = useIdeasQuery();
-  const purchaseIdeaMutation = usePurchaseIdeaMutation();
+  const createCheckoutSessionMutation = useCreateCheckoutSessionMutation();
   const cancelPurchaseMutation = useCancelPurchaseMutation();
 
-  const [paymentProvider, setPaymentProvider] = useState("STRIPE");
-  const [currency, setCurrency] = useState("USD");
   const [feedback, setFeedback] = useState<Feedback>(null);
 
   if (purchasesQuery.isPending || ideasQuery.isPending) {
@@ -101,23 +122,18 @@ export default function PurchesIdeaPage() {
   const purchases = purchasesQuery.data?.data ?? [];
   const ideas = ideasQuery.data?.data ?? [];
   const ideaMap = new Map(ideas.map((idea) => [idea.id, idea]));
+  const purchasableIdeas = ideas.filter((idea) => isPaidIdea(idea));
 
   const onPurchase = async (ideaId: string) => {
     setFeedback(null);
 
     try {
-      const response = await purchaseIdeaMutation.mutateAsync({
+      const response = await createCheckoutSessionMutation.mutateAsync({
         ideaId,
-        payload: {
-          paymentProvider: paymentProvider.trim() || "STRIPE",
-          currency: currency.trim() || undefined,
-        },
+        payload: {},
       });
 
-      setFeedback({
-        type: "success",
-        text: response.message || "Purchase request created successfully.",
-      });
+      window.location.assign(response.data.checkoutUrl);
     } catch (error) {
       setFeedback({
         type: "error",
@@ -148,7 +164,7 @@ export default function PurchesIdeaPage() {
       <div>
         <h2 className="text-xl font-semibold">Purchase Ideas</h2>
         <p className="text-sm text-muted-foreground">
-          Configure a provider, purchase an idea, and review your purchase history.
+          Start Stripe checkout for paid ideas and review your purchase history.
         </p>
       </div>
 
@@ -164,29 +180,11 @@ export default function PurchesIdeaPage() {
         </p>
       ) : null}
 
-      <form
-        className="grid gap-3 rounded-xl border bg-background p-4 md:max-w-xl md:grid-cols-2"
-        onSubmit={(event: FormEvent<HTMLFormElement>) => {
-          event.preventDefault();
-        }}
-      >
-        <Input
-          placeholder="Payment provider"
-          value={paymentProvider}
-          onChange={(event) => setPaymentProvider(event.target.value)}
-        />
-        <Input
-          placeholder="Currency"
-          value={currency}
-          onChange={(event) => setCurrency(event.target.value)}
-        />
-      </form>
-
       <section className="space-y-3">
-        <h3 className="text-lg font-semibold">Available Ideas</h3>
+        <h3 className="text-lg font-semibold">Available Paid Ideas</h3>
 
-        {ideas.length === 0 ? (
-          <EmptyState title="No ideas available for purchase" />
+        {purchasableIdeas.length === 0 ? (
+          <EmptyState title="No paid ideas available" />
         ) : (
           <Table>
             <TableHeader>
@@ -199,10 +197,10 @@ export default function PurchesIdeaPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ideas.map((idea) => {
-                const isPurchasing =
-                  purchaseIdeaMutation.isPending &&
-                  purchaseIdeaMutation.variables?.ideaId === idea.id;
+              {purchasableIdeas.map((idea) => {
+                const isRedirecting =
+                  createCheckoutSessionMutation.isPending &&
+                  createCheckoutSessionMutation.variables?.ideaId === idea.id;
 
                 return (
                   <TableRow key={idea.id}>
@@ -229,12 +227,12 @@ export default function PurchesIdeaPage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          disabled={isPurchasing || !paymentProvider.trim()}
+                          disabled={isRedirecting}
                           onClick={() => {
                             void onPurchase(idea.id);
                           }}
                         >
-                          {isPurchasing ? "Purchasing..." : "Purchase"}
+                          {isRedirecting ? "Redirecting..." : "Buy with Stripe"}
                         </Button>
                       </div>
                     </TableCell>
@@ -264,19 +262,21 @@ export default function PurchesIdeaPage() {
             </TableHeader>
             <TableBody>
               {purchases.map((purchase) => {
-                const idea = typeof purchase.ideaId === "string" ? ideaMap.get(purchase.ideaId) : undefined;
+                const ideaId = getPurchaseIdeaId(purchase);
+                const idea = ideaId ? ideaMap.get(ideaId) : undefined;
                 const isCancelling =
                   cancelPurchaseMutation.isPending &&
                   cancelPurchaseMutation.variables?.id === purchase.id;
                 const purchaseStatus = typeof purchase.status === "string" ? purchase.status : "UNKNOWN";
-                const canCancel = !purchaseStatus.toLowerCase().includes("cancel");
+                const canCancel = purchaseStatus === "PENDING";
+                const paymentStatusHref = `/payments/success?purchaseId=${encodeURIComponent(purchase.id)}`;
 
                 return (
                   <TableRow key={purchase.id}>
                     <TableCell className="min-w-72">
                       <div className="space-y-1">
                         <p className="font-medium text-slate-950">
-                          {idea ? getIdeaTitle(idea) : purchase.ideaId ?? "Purchase"}
+                          {idea ? getIdeaTitle(idea) : ideaId || "Purchase"}
                         </p>
                         {idea?.description ? (
                           <p className="text-sm text-slate-600">{idea.description}</p>
@@ -285,17 +285,23 @@ export default function PurchesIdeaPage() {
                     </TableCell>
                     <TableCell className="font-mono text-xs">{purchase.id}</TableCell>
                     <TableCell>{formatLabel(purchaseStatus, "Unknown")}</TableCell>
-                    <TableCell>{formatCurrency(purchase.amount ?? null, purchase.currency)}</TableCell>
+                    <TableCell>{formatCurrency(purchase.amount, purchase.currency)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {purchase.ideaId ? (
+                        {ideaId ? (
                           <Link
-                            href={`/idea/${purchase.ideaId}`}
+                            href={`/idea/${ideaId}`}
                             className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
                           >
                             View
                           </Link>
                         ) : null}
+                        <Link
+                          href={paymentStatusHref}
+                          className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
+                        >
+                          Status
+                        </Link>
                         <Button
                           type="button"
                           variant="outline"

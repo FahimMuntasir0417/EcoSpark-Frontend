@@ -1,25 +1,25 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { httpClient } from "@/lib/axios/httpClient";
 import { parseApiData, parseApiPayload } from "@/lib/api/parse";
 import {
-  paymentWebhookInputSchema,
-  purchaseIdeaInputSchema,
+  checkoutSessionSchema,
+  createCheckoutSessionInputSchema,
   purchaseSchema,
   refundPurchaseInputSchema,
   transactionSchema,
 } from "@/contracts/commerce.contract";
 import type {
-  PaymentWebhookInput,
+  CheckoutSession,
+  CreateCheckoutSessionInput,
   Purchase,
-  PurchaseIdeaInput,
   RefundPurchaseInput,
   Transaction,
 } from "@/contracts/commerce.contract";
 
 export type {
-  PaymentWebhookInput,
+  CheckoutSession,
+  CreateCheckoutSessionInput,
   Purchase,
-  PurchaseIdeaInput,
   RefundPurchaseInput,
   Transaction,
 };
@@ -31,16 +31,18 @@ export type CommerceQueryOptions = {
 
 const purchaseListSchema = z.array(purchaseSchema);
 const transactionListSchema = z.array(transactionSchema);
-const webhookResultSchema = z.record(z.string(), z.unknown());
 
 export const commerceService = {
-  async purchaseIdea(ideaId: string, payload: PurchaseIdeaInput) {
-    const parsedPayload = parseApiPayload(payload, purchaseIdeaInputSchema);
+  async createCheckoutSession(
+    ideaId: string,
+    payload: CreateCheckoutSessionInput = {},
+  ) {
+    const parsedPayload = parseApiPayload(payload, createCheckoutSessionInputSchema);
     const response = await httpClient.post<unknown>(
-      `/commerce/ideas/${encodeURIComponent(ideaId)}/purchase`,
+      `/commerce/ideas/${encodeURIComponent(ideaId)}/checkout-session`,
       parsedPayload,
     );
-    return parseApiData(response, purchaseSchema);
+    return parseApiData(response, checkoutSessionSchema);
   },
 
   async getAllPurchases(options: CommerceQueryOptions = {}) {
@@ -52,10 +54,13 @@ export const commerceService = {
   },
 
   async getSinglePurchase(id: string, options: CommerceQueryOptions = {}) {
-    const response = await httpClient.get<unknown>(`/commerce/purchases/${encodeURIComponent(id)}`, {
-      params: options.params,
-      signal: options.signal,
-    });
+    const response = await httpClient.get<unknown>(
+      `/commerce/purchases/${encodeURIComponent(id)}`,
+      {
+        params: options.params,
+        signal: options.signal,
+      },
+    );
     return parseApiData(response, purchaseSchema);
   },
 
@@ -101,14 +106,5 @@ export const commerceService = {
       },
     );
     return parseApiData(response, transactionSchema);
-  },
-
-  async paymentWebhook(payload: PaymentWebhookInput) {
-    const parsedPayload = parseApiPayload(payload, paymentWebhookInputSchema);
-    const response = await httpClient.post<unknown>(
-      "/commerce/payments/webhook",
-      parsedPayload,
-    );
-    return parseApiData(response, webhookResultSchema);
   },
 };
