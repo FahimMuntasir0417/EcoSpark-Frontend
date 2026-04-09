@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+} from "@/components/ui/data-state";
 import {
   useApproveIdeaMutation,
   useArchiveIdeaMutation,
@@ -68,7 +72,11 @@ function formatDate(value?: string | null) {
 
 function isPendingReviewIdea(idea: Idea) {
   const status = getIdeaStatus(idea).toLowerCase();
-  return status.includes("pending") || status.includes("submitted") || status.includes("review");
+  return (
+    status.includes("pending") ||
+    status.includes("submitted") ||
+    status.includes("review")
+  );
 }
 
 function isArchivedIdea(idea: Idea) {
@@ -99,31 +107,36 @@ function getViewCopy(mode: AdminIdeaViewMode): ViewCopy {
     case "ideas-management":
       return {
         title: "All Ideas",
-        description: "Review every idea returned by the ideas API and apply moderation actions.",
+        description:
+          "Review every idea returned by the ideas API and apply moderation actions.",
         emptyTitle: "No ideas found",
       };
     case "pending-review":
       return {
         title: "Pending Review",
-        description: "Approve, reject, or archive ideas that are waiting for moderation.",
+        description:
+          "Approve, reject, or archive ideas that are waiting for moderation.",
         emptyTitle: "No ideas pending review",
       };
     case "featured-ideas":
       return {
         title: "Featured Ideas",
-        description: "Monitor featured ideas and continue promoting or archiving them.",
+        description:
+          "Monitor featured ideas and continue promoting or archiving them.",
         emptyTitle: "No featured ideas found",
       };
     case "archived-ideas":
       return {
         title: "Archived Ideas",
-        description: "Inspect archived ideas currently returned by the backend.",
+        description:
+          "Inspect archived ideas currently returned by the backend.",
         emptyTitle: "No archived ideas found",
       };
     default:
       return {
         title: "Admin Dashboard",
-        description: "Manage ideas, moderation state, and featured content from one place.",
+        description:
+          "Manage ideas, moderation state, and featured content from one place.",
         emptyTitle: "No ideas found",
       };
   }
@@ -487,10 +500,7 @@ export function AdminIdeaView({
             const isRejectingWithReason =
               selectedStatusAction === "REJECT" && !rejectReason.trim();
             const isUpdatingStatus =
-              isApproving ||
-              isRejecting ||
-              isArchiving ||
-              isPublishing;
+              isApproving || isRejecting || isArchiving || isPublishing;
             const hasActions = Object.values(actions).some(Boolean);
 
             return (
@@ -505,7 +515,12 @@ export function AdminIdeaView({
 
                   <div className="grid gap-1 text-xs text-muted-foreground md:grid-cols-2">
                     <p>Idea ID: {idea.id}</p>
-                    <p>Category: {idea.category?.name ?? idea.categoryId ?? "Uncategorized"}</p>
+                    <p>
+                      Category:{" "}
+                      {idea.category?.name ??
+                        idea.categoryId ??
+                        "Uncategorized"}
+                    </p>
                     <p>Submitted: {formatDate(idea.submittedAt)}</p>
                     <p>Published: {formatDate(idea.publishedAt)}</p>
                     <p>Featured: {idea.isFeatured ? "Yes" : "No"}</p>
@@ -534,7 +549,8 @@ export function AdminIdeaView({
                         <select
                           value={selectedStatusAction}
                           onChange={(event) => {
-                            const nextAction = event.target.value as StatusAction;
+                            const nextAction = event.target
+                              .value as StatusAction;
                             setStatusActionByIdeaId((previous) => ({
                               ...previous,
                               [idea.id]: nextAction,
@@ -572,9 +588,16 @@ export function AdminIdeaView({
                           type="button"
                           variant="outline"
                           onClick={() => {
-                            void onApplyStatusAction(idea, selectedStatusAction);
+                            void onApplyStatusAction(
+                              idea,
+                              selectedStatusAction,
+                            );
                           }}
-                          disabled={isUpdatingStatus || isDeleting || isRejectingWithReason}
+                          disabled={
+                            isUpdatingStatus ||
+                            isDeleting ||
+                            isRejectingWithReason
+                          }
                         >
                           {isUpdatingStatus ? "Updating..." : "Update Status"}
                         </Button>
@@ -673,7 +696,8 @@ export function AdminIdeaView({
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      No direct moderation action is available for this idea on the current route.
+                      No direct moderation action is available for this idea on
+                      the current route.
                     </p>
                   )}
                 </div>

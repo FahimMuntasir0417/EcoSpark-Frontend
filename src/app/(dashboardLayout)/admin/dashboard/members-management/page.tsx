@@ -1,5 +1,5 @@
-﻿import { UserManagementView } from "../_components/user-management-view";
+import { AdminMembersManagementWorkspace } from "./_components/admin-members-management-workspace";
 
 export default function MembersManagementPage() {
-  return <UserManagementView mode="MEMBERS" />;
+  return <AdminMembersManagementWorkspace />;
 }

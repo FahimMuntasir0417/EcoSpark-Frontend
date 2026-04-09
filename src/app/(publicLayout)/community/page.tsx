@@ -1,137 +1,139 @@
 "use client";
 
+import { useDeferredValue, useEffect, useState } from "react";
 import {
+  BookmarkCheck,
   MessageSquareQuote,
+  Quote,
   Search,
   Sparkles,
-  Tag,
+  Star,
+  TrendingUp,
 } from "lucide-react";
-import { type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
 import { Input } from "@/components/ui/input";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+  DirectoryBadge,
+  DirectoryDetailCard,
+  DirectoryFieldGrid,
+  DirectoryPaginationSection,
+  DirectorySummaryCard,
+} from "../_components/public-directory-primitives";
+import {
+  PUBLIC_DIRECTORY_PAGE_SIZE,
+  formatBadgeLabel,
+  getDirectoryFields,
+  getPaginationItems,
+  hasText,
+} from "../_lib/public-directory";
 import { useExperienceReportsQuery } from "@/features/community";
 import { getApiErrorMessage } from "@/lib/errors/api-error";
-import { cn } from "@/lib/utils";
 import type { ExperienceReport } from "@/services/community.service";
 
-const REPORTS_PAGE_SIZE = 6;
-
-type PaginationPageItem = number | "ellipsis";
-
-function hasText(value?: string | null) {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function formatBadgeLabel(value?: string | null) {
-  if (!hasText(value)) {
-    return "Unknown";
-  }
-
-  return value!
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
+const REPORTS_PAGE_SIZE = PUBLIC_DIRECTORY_PAGE_SIZE;
+const REPORT_FIELD_OPTIONS = {
+  maxDepth: 3,
+  hideIdentifierFields: true,
+  priorityPaths: [
+    "title",
+    "summary",
+    "status",
+    "isFeatured",
+    "outcome",
+    "challenges",
+    "measurableResult",
+    "adoptedScale",
+    "location",
+    "effectivenessRating",
+    "beforeImageUrl",
+    "afterImageUrl",
+    "createdAt",
+    "updatedAt",
+  ],
+};
 
 function getReportTitle(report: ExperienceReport) {
-  return hasText(report.title) ? report.title!.trim() : "Untitled experience report";
+  return hasText(report.title) ? report.title.trim() : "Untitled report";
 }
 
 function getReportSummary(report: ExperienceReport) {
   if (hasText(report.summary)) {
-    return report.summary!.trim();
+    return report.summary.trim();
   }
 
-  return "No summary has been added yet for this report.";
+  return "No implementation summary has been added for this report yet.";
 }
 
-function getPaginationItems(
-  totalPages: number,
-  currentPage: number,
-): PaginationPageItem[] {
-  if (totalPages <= 1) {
-    return [1];
-  }
-
-  const pages = new Set<number>([
-    1,
-    totalPages,
-    currentPage - 1,
-    currentPage,
-    currentPage + 1,
-  ]);
-
-  if (currentPage <= 3) {
-    pages.add(2);
-    pages.add(3);
-  }
-
-  if (currentPage >= totalPages - 2) {
-    pages.add(totalPages - 1);
-    pages.add(totalPages - 2);
-  }
-
-  const sortedPages = [...pages]
-    .filter((page) => page >= 1 && page <= totalPages)
-    .sort((a, b) => a - b);
-
-  const items: PaginationPageItem[] = [];
-
-  sortedPages.forEach((page, index) => {
-    const previousPage = sortedPages[index - 1];
-
-    if (typeof previousPage === "number" && page - previousPage > 1) {
-      items.push("ellipsis");
-    }
-
-    items.push(page);
-  });
-
-  return items;
+function getReportStatus(report: ExperienceReport) {
+  return formatBadgeLabel(report.status, "Needs review");
 }
 
-function Pill({
-  children,
-  tone = "neutral",
-}: {
-  children: ReactNode;
-  tone?: "neutral" | "accent" | "success";
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium",
-        tone === "accent" && "bg-sky-100 text-sky-800",
-        tone === "success" && "bg-emerald-100 text-emerald-800",
-        tone === "neutral" && "bg-slate-100 text-slate-700",
-      )}
-    >
-      {children}
-    </span>
-  );
+function getReportPlacement(report: ExperienceReport) {
+  return report.isFeatured === true ? "Featured placement" : "Standard placement";
+}
+
+function getReportConnectionLabel(report: ExperienceReport) {
+  return hasText(report.ideaId)
+    ? "Connected to an idea in the library"
+    : "Shared as a standalone community report";
+}
+
+function getReportFields(report: ExperienceReport) {
+  return getDirectoryFields(report, REPORT_FIELD_OPTIONS);
+}
+
+function getReportSearchText(report: ExperienceReport) {
+  return getReportFields(report)
+    .map((field) => `${field.label} ${field.value}`)
+    .join(" ")
+    .toLowerCase();
+}
+
+function compareReports(a: ExperienceReport, b: ExperienceReport) {
+  if (a.isFeatured === true && b.isFeatured !== true) {
+    return -1;
+  }
+
+  if (a.isFeatured !== true && b.isFeatured === true) {
+    return 1;
+  }
+
+  return getReportTitle(a).localeCompare(getReportTitle(b));
 }
 
 export default function CommunityPage() {
   const reportsQuery = useExperienceReportsQuery();
   const [searchValue, setSearchValue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const deferredSearchValue = useDeferredValue(searchValue);
+
+  const reports = [...(reportsQuery.data?.data ?? [])].sort(compareReports);
+  const activeQuery = deferredSearchValue.trim();
+  const normalizedSearch = activeQuery.toLowerCase();
+  const filteredReports = normalizedSearch
+    ? reports.filter((report) => getReportSearchText(report).includes(normalizedSearch))
+    : reports;
+
+  const totalReports = filteredReports.length;
+  const featuredReports = filteredReports.filter(
+    (report) => report.isFeatured === true,
+  ).length;
+  const linkedIdeas = filteredReports.filter((report) => hasText(report.ideaId)).length;
+  const distinctStatuses = new Set(
+    filteredReports.map((report) => getReportStatus(report)),
+  ).size;
+  const totalPages = Math.max(1, Math.ceil(totalReports / REPORTS_PAGE_SIZE));
+
+  useEffect(() => {
+    setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
+  }, [totalPages]);
 
   if (reportsQuery.isPending) {
     return (
       <main className="public-page-shell">
         <LoadingState
-          rows={6}
+          rows={4}
           title="Loading experience reports"
           description="Fetching community experience reports from the backend."
           className="surface-card p-5"
@@ -155,32 +157,6 @@ export default function CommunityPage() {
     );
   }
 
-  const reports = reportsQuery.data?.data ?? [];
-  const normalizedSearch = searchValue.trim().toLowerCase();
-
-  const filteredReports = normalizedSearch
-    ? reports.filter((report) => {
-        const fields = [
-          report.id,
-          report.ideaId,
-          report.title,
-          report.summary,
-          report.status,
-        ];
-
-        return fields.some(
-          (field) =>
-            typeof field === "string" &&
-            field.toLowerCase().includes(normalizedSearch),
-        );
-      })
-    : reports;
-
-  const totalReports = filteredReports.length;
-  const featuredReports = filteredReports.filter(
-    (report) => report.isFeatured === true,
-  ).length;
-  const totalPages = Math.max(1, Math.ceil(totalReports / REPORTS_PAGE_SIZE));
   const activePage = Math.min(currentPage, totalPages);
   const pageStartIndex = (activePage - 1) * REPORTS_PAGE_SIZE;
   const pageReports = filteredReports.slice(
@@ -198,52 +174,114 @@ export default function CommunityPage() {
 
   return (
     <main className="public-page-shell">
-      <section className="surface-card grid gap-6 p-7 lg:grid-cols-[minmax(0,1fr)_16rem] lg:p-8">
-        <div className="space-y-4">
-          <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
-            <Sparkles className="size-3.5" />
-            Community Reports
-          </span>
+      <section className="surface-card overflow-hidden">
+        <div className="grid gap-6 p-7 lg:grid-cols-[minmax(0,1.1fr)_minmax(19rem,0.9fr)] lg:p-8">
+          <div className="space-y-5">
+            <DirectoryBadge
+              icon={Sparkles}
+              label="Community Intelligence"
+              tone="accent"
+            />
 
-          <div className="space-y-3">
-            <h1 className="section-title">
-              Learn from real implementation experience.
-            </h1>
-            <p className="max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
-              Discover outcome-focused reports, implementation notes, and lessons
-              learned shared by the Eco Spark community.
-            </p>
-            {reportsQuery.data?.message ? (
-              <p className="text-sm text-slate-500">{reportsQuery.data.message}</p>
-            ) : null}
+            <div className="space-y-3">
+              <h1 className="section-title">
+                Surface practical lessons from the Eco Spark community in a
+                cleaner, publication-ready format.
+              </h1>
+              <p className="max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
+                Each report is organized for faster review by operations teams,
+                partner organizations, and readers who need quick insight into
+                what was tried, shared, and featured.
+              </p>
+              {reportsQuery.data?.message ? (
+                <p className="text-sm text-slate-500">{reportsQuery.data.message}</p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-wrap gap-3 text-sm text-slate-600">
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-900">
+                Featured reports lead the directory
+              </span>
+              <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-rose-900">
+                Two reports per page
+              </span>
+            </div>
           </div>
-        </div>
 
-        <div className="surface-muted grid gap-3 p-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Matching reports
-            </p>
-            <p className="mt-2 text-3xl font-semibold text-slate-950">
-              {totalReports.toLocaleString()}
-            </p>
-          </div>
+          <div className="rounded-[1.9rem] border border-amber-100 bg-[linear-gradient(145deg,rgba(255,251,235,0.98),rgba(255,241,242,0.96))] p-5 shadow-[0_28px_70px_-44px_rgba(120,53,15,0.35)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+                  Reporting overview
+                </p>
+                <p className="mt-2 max-w-xs text-sm leading-6 text-slate-600">
+                  A warmer editorial treatment for community stories, featured insights, and practical lessons.
+                </p>
+              </div>
+              <span className="inline-flex rounded-full bg-white/80 p-3 text-amber-700 shadow-sm">
+                <Quote className="size-5" />
+              </span>
+            </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Featured</p>
-            <p className="mt-1 font-semibold text-slate-900">
-              {featuredReports.toLocaleString()}
-            </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <DirectorySummaryCard
+                label="Matching"
+                value={totalReports.toLocaleString()}
+                caption="Reports in the current view"
+                className="border-amber-100 bg-white/80"
+              />
+              <DirectorySummaryCard
+                label="Featured"
+                value={featuredReports.toLocaleString()}
+                caption="Highlighted reports in the feed"
+                className="border-rose-100 bg-white/80"
+              />
+              <DirectorySummaryCard
+                label="Linked Ideas"
+                value={linkedIdeas.toLocaleString()}
+                caption="Reports connected to an idea record"
+                className="border-orange-100 bg-white/80"
+              />
+              <DirectorySummaryCard
+                label="Statuses"
+                value={distinctStatuses.toLocaleString()}
+                caption="Distinct review stages represented"
+                className="border-yellow-100 bg-white/80"
+              />
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="surface-card space-y-3 p-4 sm:p-5">
+      <section className="surface-card space-y-4 p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-2">
+            <p className="section-kicker">Directory Controls</p>
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
+              Search report summaries and linked idea references
+            </h2>
+            <p className="text-sm leading-6 text-slate-600">
+              Filter by title, summary, status, featured placement, or report connection.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/85 px-4 py-3 text-right">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+              Page Status
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-900">
+              Page {activePage} of {totalPages}
+            </p>
+            <p className="text-xs text-slate-500">
+              {REPORTS_PAGE_SIZE} reports per page
+            </p>
+          </div>
+        </div>
+
         <form
           className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
           onSubmit={(event) => {
             event.preventDefault();
-            setCurrentPage(1);
           }}
         >
           <label className="relative block">
@@ -254,167 +292,175 @@ export default function CommunityPage() {
                 setSearchValue(event.target.value);
                 setCurrentPage(1);
               }}
-              placeholder="Search by title, summary, status, idea ID, or report ID"
-              className="h-10 border-slate-200 bg-white pl-9"
+              placeholder="Search by title, summary, status, or report connection"
+              className="h-11 rounded-2xl border-slate-200 bg-white pl-9 shadow-sm"
             />
           </label>
 
           <Button
             type="button"
             variant="outline"
-            className="h-10 rounded-full border-slate-200 px-5 text-slate-700 hover:bg-slate-50"
+            className="h-11 rounded-2xl border-slate-200 px-5 text-slate-700 hover:bg-slate-50"
             onClick={() => {
               setSearchValue("");
               setCurrentPage(1);
             }}
-            disabled={!normalizedSearch}
+            disabled={!searchValue.trim()}
           >
             Clear search
           </Button>
         </form>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
-          <p>
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 font-medium text-slate-700">
             Showing {rangeStart}-{rangeEnd} of {totalReports.toLocaleString()}
-          </p>
-          {normalizedSearch ? (
+          </span>
+          {activeQuery ? (
             <p>
               Search:{" "}
-              <span className="font-medium text-slate-800">{searchValue.trim()}</span>
+              <span className="font-medium text-slate-900">{activeQuery}</span>
             </p>
           ) : (
-            <p>Showing all reports</p>
+            <p>Showing all published community reports</p>
           )}
         </div>
+
+        <p className="text-xs text-slate-500">
+          Results update as you type so review teams can move through reports
+          without extra clicks.
+        </p>
       </section>
 
       {totalReports === 0 ? (
         <EmptyState
           title="No experience reports found"
           description={
-            normalizedSearch
-              ? "Try another keyword."
+            activeQuery
+              ? "Try another keyword or clear the search field."
               : "No community reports are available right now."
           }
-          className="surface-card p-5"
+          className="surface-card p-6"
         />
       ) : (
-        <section className="grid gap-5 lg:grid-cols-2">
+        <section className="space-y-5">
           {pageReports.map((report) => (
-            <article key={report.id} className="surface-card p-6">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-2">
-                  <h2 className="text-xl font-semibold tracking-tight text-slate-950">
-                    {getReportTitle(report)}
-                  </h2>
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                    Report ID: {report.id}
-                  </p>
-                </div>
+            <article key={report.id} className="surface-card overflow-hidden">
+              <div className="border-b border-amber-100 bg-[linear-gradient(135deg,rgba(255,251,235,0.95),rgba(255,241,242,0.92),rgba(255,255,255,0.98))] px-6 py-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <DirectoryBadge
+                        icon={MessageSquareQuote}
+                        label={getReportStatus(report)}
+                        tone="accent"
+                        className="normal-case tracking-normal"
+                      />
+                      {report.isFeatured === true ? (
+                        <DirectoryBadge
+                          icon={Star}
+                          label="Featured"
+                          tone="success"
+                          className="normal-case tracking-normal"
+                        />
+                      ) : null}
+                    </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Pill tone="accent">{formatBadgeLabel(report.status)}</Pill>
-                  {report.isFeatured ? <Pill tone="success">Featured</Pill> : null}
+                    <div>
+                      <p className="section-kicker">Experience Report</p>
+                      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                        {getReportTitle(report)}
+                      </h2>
+                      <p className="mt-2 text-sm text-slate-600">
+                        {getReportConnectionLabel(report)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-amber-200 bg-white/90 px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Placement
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-slate-900">
+                      {getReportPlacement(report)}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <p className="mt-4 text-sm leading-7 text-slate-600">
-                {getReportSummary(report)}
-              </p>
+              <div className="space-y-6 p-6">
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="section-kicker">Implementation Summary</p>
+                      <p className="mt-3 text-sm leading-7 text-slate-600">
+                        {getReportSummary(report)}
+                      </p>
+                    </div>
 
-              <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
-                <div className="surface-muted flex items-center gap-2 px-3 py-2 text-slate-700">
-                  <Tag className="size-4 text-slate-400" />
-                  <span>Idea ID: {hasText(report.ideaId) ? report.ideaId : "Not set"}</span>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
+                      <p className="section-kicker">Editorial Note</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                        This report is currently labeled as{" "}
+                        {getReportStatus(report).toLowerCase()} and appears in the
+                        directory with {getReportPlacement(report).toLowerCase()}.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3">
+                    <DirectoryDetailCard
+                      icon={BookmarkCheck}
+                      label="Connection"
+                      value={getReportConnectionLabel(report)}
+                      className="border-amber-100 bg-amber-50/60"
+                    />
+                    <DirectoryDetailCard
+                      icon={MessageSquareQuote}
+                      label="Review Stage"
+                      value={getReportStatus(report)}
+                      className="border-rose-100 bg-rose-50/60"
+                    />
+                    <DirectoryDetailCard
+                      icon={Star}
+                      label="Placement"
+                      value={getReportPlacement(report)}
+                      className="border-orange-100 bg-orange-50/60"
+                    />
+                    <DirectoryDetailCard
+                      icon={TrendingUp}
+                      label="Story Signal"
+                      value={
+                        report.isFeatured === true
+                          ? "Highlighted for broader attention"
+                          : "Available in the standard report stream"
+                      }
+                      className="border-yellow-100 bg-yellow-50/70"
+                    />
+                  </div>
                 </div>
-                <div className="surface-muted flex items-center gap-2 px-3 py-2 text-slate-700">
-                  <MessageSquareQuote className="size-4 text-slate-400" />
-                  <span>Status: {formatBadgeLabel(report.status)}</span>
-                </div>
+
+                <DirectoryFieldGrid
+                  title="Published Fields"
+                  fields={getReportFields(report)}
+                />
               </div>
-
-              <details className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <summary className="cursor-pointer text-sm font-medium text-slate-800">
-                  View raw payload
-                </summary>
-                <pre className="mt-3 overflow-x-auto rounded-xl bg-white p-3 text-xs leading-5 text-slate-700">
-                  {JSON.stringify(report, null, 2)}
-                </pre>
-              </details>
             </article>
           ))}
         </section>
       )}
 
       {totalPages > 1 ? (
-        <section className="surface-card grid gap-3 p-4">
-          <Pagination>
-            <PaginationContent className="flex-wrap items-center justify-center gap-2">
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  className={cn(disablePrevious && "pointer-events-none opacity-50")}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    if (disablePrevious) {
-                      return;
-                    }
-                    setCurrentPage(Math.max(1, activePage - 1));
-                  }}
-                />
-              </PaginationItem>
-
-              {paginationItems.map((item, index) => {
-                if (item === "ellipsis") {
-                  return (
-                    <PaginationItem key={`ellipsis-${index}`}>
-                      <PaginationEllipsis />
-                    </PaginationItem>
-                  );
-                }
-
-                const isActivePage = item === activePage;
-
-                return (
-                  <PaginationItem key={`page-${item}`}>
-                    <PaginationLink
-                      href="#"
-                      isActive={isActivePage}
-                      className={cn(isActivePage && "pointer-events-none")}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        if (isActivePage) {
-                          return;
-                        }
-                        setCurrentPage(item);
-                      }}
-                    >
-                      {item}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              })}
-
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  className={cn(disableNext && "pointer-events-none opacity-50")}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    if (disableNext) {
-                      return;
-                    }
-                    setCurrentPage(Math.min(totalPages, activePage + 1));
-                  }}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-
-          <p className="text-center text-xs uppercase tracking-[0.14em] text-slate-500">
-            Page {activePage} of {totalPages}
-          </p>
-        </section>
+        <DirectoryPaginationSection
+          currentPage={activePage}
+          totalPages={totalPages}
+          paginationItems={paginationItems}
+          onPageChange={(page) => {
+            setCurrentPage(page);
+          }}
+          disablePrevious={disablePrevious}
+          disableNext={disableNext}
+          description={`Page ${activePage} of ${totalPages}. ${pageReports.length} reports are shown on this page.`}
+        />
       ) : null}
     </main>
   );

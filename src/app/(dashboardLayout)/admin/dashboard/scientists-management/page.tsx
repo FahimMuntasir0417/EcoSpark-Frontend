@@ -1,10 +1,13 @@
-﻿
-"use client";
+﻿"use client";
 
 import { useQuery } from "@tanstack/react-query";
 import { type FormEvent, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+} from "@/components/ui/data-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -401,7 +404,9 @@ function getScientistUserLabel(scientist: Scientist) {
       : "Unknown user";
 
   const userEmail =
-    linkedUser && typeof linkedUser.email === "string" && linkedUser.email.trim()
+    linkedUser &&
+    typeof linkedUser.email === "string" &&
+    linkedUser.email.trim()
       ? linkedUser.email
       : "N/A";
 
@@ -453,7 +458,9 @@ function getScientistNumber(scientist: Scientist, key: string) {
   return null;
 }
 
-function getInitialUpdateScientistForm(scientist: Scientist): UpdateScientistFormValues {
+function getInitialUpdateScientistForm(
+  scientist: Scientist,
+): UpdateScientistFormValues {
   return {
     institution: getScientistString(scientist, "institution"),
     department: getScientistString(scientist, "department"),
@@ -491,7 +498,9 @@ function getUserRecordName(user: MemberRecord) {
 }
 
 function getUserRecordEmail(user: MemberRecord) {
-  return typeof user.email === "string" && user.email.trim() ? user.email : "N/A";
+  return typeof user.email === "string" && user.email.trim()
+    ? user.email
+    : "N/A";
 }
 
 function getSpecialtyLabel(specialty: Specialty) {
@@ -573,10 +582,12 @@ export default function ScientistsManagementPage() {
   const [createForm, setCreateForm] = useState<CreateScientistFormValues>(
     initialCreateScientistForm,
   );
-  const [createErrors, setCreateErrors] = useState<CreateScientistFormErrors>({});
-  const [selectedCreateSpecialtyIds, setSelectedCreateSpecialtyIds] = useState<string[]>(
-    [],
+  const [createErrors, setCreateErrors] = useState<CreateScientistFormErrors>(
+    {},
   );
+  const [selectedCreateSpecialtyIds, setSelectedCreateSpecialtyIds] = useState<
+    string[]
+  >([]);
   const [manualCreateSpecialtyIds, setManualCreateSpecialtyIds] = useState("");
   const [updateFormById, setUpdateFormById] = useState<
     Record<string, UpdateScientistFormValues>
@@ -584,12 +595,10 @@ export default function ScientistsManagementPage() {
   const [updateErrorsById, setUpdateErrorsById] = useState<
     Record<string, UpdateScientistFormErrors>
   >({});
-  const [selectedAssignSpecialtyIdsById, setSelectedAssignSpecialtyIdsById] = useState<
-    Record<string, string[]>
-  >({});
-  const [manualAssignSpecialtyIdsById, setManualAssignSpecialtyIdsById] = useState<
-    Record<string, string>
-  >({});
+  const [selectedAssignSpecialtyIdsById, setSelectedAssignSpecialtyIdsById] =
+    useState<Record<string, string[]>>({});
+  const [manualAssignSpecialtyIdsById, setManualAssignSpecialtyIdsById] =
+    useState<Record<string, string>>({});
 
   const scientists = scientistsQuery.data?.data ?? [];
   const memberDirectory = membersQuery.data;
@@ -635,8 +644,9 @@ export default function ScientistsManagementPage() {
 
   const selectedMember = useMemo(
     () =>
-      availableMembers.find((member) => getUserRecordId(member) === createForm.userId) ??
-      null,
+      availableMembers.find(
+        (member) => getUserRecordId(member) === createForm.userId,
+      ) ?? null,
     [availableMembers, createForm.userId],
   );
 
@@ -728,6 +738,8 @@ export default function ScientistsManagementPage() {
             : undefined,
       });
 
+      console.log("Create scientist response:", response);
+
       setCreateForm(initialCreateScientistForm);
       setCreateErrors({});
       setSelectedCreateSpecialtyIds([]);
@@ -794,8 +806,8 @@ export default function ScientistsManagementPage() {
         <div className="mb-4">
           <h3 className="text-lg font-semibold">Promote Member To Scientist</h3>
           <p className="text-sm text-muted-foreground">
-            Select a member, choose specialties, and complete a structured scientist
-            profile form.
+            Select a member, choose specialties, and complete a structured
+            scientist profile form.
           </p>
         </div>
 
@@ -807,13 +819,16 @@ export default function ScientistsManagementPage() {
 
         {memberRoleMetadataMissing ? (
           <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            User role metadata is missing from the response. Showing all available
-            accounts as selectable members.
+            User role metadata is missing from the response. Showing all
+            available accounts as selectable members.
           </p>
         ) : null}
 
         <form className="space-y-6" onSubmit={onCreateScientist}>
-          <fieldset disabled={createScientistMutation.isPending} className="space-y-6">
+          <fieldset
+            disabled={createScientistMutation.isPending}
+            className="space-y-6"
+          >
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="scientist-create-user-id">Member</Label>
@@ -837,7 +852,9 @@ export default function ScientistsManagementPage() {
                     onChange={(event) =>
                       onCreateFieldChange("userId", event.target.value)
                     }
-                    disabled={membersQuery.isPending || availableMembers.length === 0}
+                    disabled={
+                      membersQuery.isPending || availableMembers.length === 0
+                    }
                   >
                     <option value="">
                       {membersQuery.isPending
@@ -875,7 +892,9 @@ export default function ScientistsManagementPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="scientist-create-years">Years Of Experience</Label>
+                <Label htmlFor="scientist-create-years">
+                  Years Of Experience
+                </Label>
                 <Input
                   id="scientist-create-years"
                   type="number"
@@ -898,7 +917,9 @@ export default function ScientistsManagementPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="scientist-create-institution">Institution</Label>
+                <Label htmlFor="scientist-create-institution">
+                  Institution
+                </Label>
                 <Input
                   id="scientist-create-institution"
                   placeholder="Dhaka Medical College"
@@ -909,7 +930,9 @@ export default function ScientistsManagementPage() {
                   required
                 />
                 {createErrors.institution ? (
-                  <p className="text-xs text-red-600">{createErrors.institution}</p>
+                  <p className="text-xs text-red-600">
+                    {createErrors.institution}
+                  </p>
                 ) : null}
               </div>
 
@@ -925,12 +948,16 @@ export default function ScientistsManagementPage() {
                   required
                 />
                 {createErrors.department ? (
-                  <p className="text-xs text-red-600">{createErrors.department}</p>
+                  <p className="text-xs text-red-600">
+                    {createErrors.department}
+                  </p>
                 ) : null}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="scientist-create-specialization">Specialization</Label>
+                <Label htmlFor="scientist-create-specialization">
+                  Specialization
+                </Label>
                 <Input
                   id="scientist-create-specialization"
                   placeholder="Heart Disease"
@@ -941,12 +968,16 @@ export default function ScientistsManagementPage() {
                   required
                 />
                 {createErrors.specialization ? (
-                  <p className="text-xs text-red-600">{createErrors.specialization}</p>
+                  <p className="text-xs text-red-600">
+                    {createErrors.specialization}
+                  </p>
                 ) : null}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="scientist-create-qualification">Qualification</Label>
+                <Label htmlFor="scientist-create-qualification">
+                  Qualification
+                </Label>
                 <Input
                   id="scientist-create-qualification"
                   placeholder="MBBS, MD"
@@ -957,13 +988,17 @@ export default function ScientistsManagementPage() {
                   required
                 />
                 {createErrors.qualification ? (
-                  <p className="text-xs text-red-600">{createErrors.qualification}</p>
+                  <p className="text-xs text-red-600">
+                    {createErrors.qualification}
+                  </p>
                 ) : null}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="scientist-create-interests">Research Interests</Label>
+              <Label htmlFor="scientist-create-interests">
+                Research Interests
+              </Label>
               <textarea
                 id="scientist-create-interests"
                 rows={4}
@@ -976,13 +1011,17 @@ export default function ScientistsManagementPage() {
                 required
               />
               {createErrors.researchInterests ? (
-                <p className="text-xs text-red-600">{createErrors.researchInterests}</p>
+                <p className="text-xs text-red-600">
+                  {createErrors.researchInterests}
+                </p>
               ) : null}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="scientist-create-contact">Contact Number (optional)</Label>
+                <Label htmlFor="scientist-create-contact">
+                  Contact Number (optional)
+                </Label>
                 <Input
                   id="scientist-create-contact"
                   placeholder="01700000000"
@@ -994,7 +1033,9 @@ export default function ScientistsManagementPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="scientist-create-address">Address (optional)</Label>
+                <Label htmlFor="scientist-create-address">
+                  Address (optional)
+                </Label>
                 <Input
                   id="scientist-create-address"
                   placeholder="Dhaka, Bangladesh"
@@ -1006,7 +1047,9 @@ export default function ScientistsManagementPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="scientist-create-photo">Profile Photo URL (optional)</Label>
+                <Label htmlFor="scientist-create-photo">
+                  Profile Photo URL (optional)
+                </Label>
                 <Input
                   id="scientist-create-photo"
                   type="url"
@@ -1017,12 +1060,16 @@ export default function ScientistsManagementPage() {
                   }
                 />
                 {createErrors.profilePhoto ? (
-                  <p className="text-xs text-red-600">{createErrors.profilePhoto}</p>
+                  <p className="text-xs text-red-600">
+                    {createErrors.profilePhoto}
+                  </p>
                 ) : null}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="scientist-create-linkedin">LinkedIn URL (optional)</Label>
+                <Label htmlFor="scientist-create-linkedin">
+                  LinkedIn URL (optional)
+                </Label>
                 <Input
                   id="scientist-create-linkedin"
                   type="url"
@@ -1033,7 +1080,9 @@ export default function ScientistsManagementPage() {
                   }
                 />
                 {createErrors.linkedinUrl ? (
-                  <p className="text-xs text-red-600">{createErrors.linkedinUrl}</p>
+                  <p className="text-xs text-red-600">
+                    {createErrors.linkedinUrl}
+                  </p>
                 ) : null}
               </div>
 
@@ -1063,7 +1112,9 @@ export default function ScientistsManagementPage() {
                   id="scientist-create-orcid"
                   placeholder="0000-0002-1825-0097"
                   value={createForm.orcid}
-                  onChange={(event) => onCreateFieldChange("orcid", event.target.value)}
+                  onChange={(event) =>
+                    onCreateFieldChange("orcid", event.target.value)
+                  }
                 />
               </div>
             </div>
@@ -1106,7 +1157,9 @@ export default function ScientistsManagementPage() {
                   {specialties.map((specialty) => {
                     const label = getSpecialtyLabel(specialty);
                     const description = getSpecialtyDescription(specialty);
-                    const checked = selectedCreateSpecialtyIds.includes(specialty.id);
+                    const checked = selectedCreateSpecialtyIds.includes(
+                      specialty.id,
+                    );
 
                     return (
                       <label
@@ -1136,8 +1189,14 @@ export default function ScientistsManagementPage() {
           </fieldset>
 
           <div className="flex justify-end">
-            <Button type="submit" variant="outline" disabled={createScientistMutation.isPending}>
-              {createScientistMutation.isPending ? "Creating..." : "Promote Member"}
+            <Button
+              type="submit"
+              variant="outline"
+              disabled={createScientistMutation.isPending}
+            >
+              {createScientistMutation.isPending
+                ? "Creating..."
+                : "Promote Member"}
             </Button>
           </div>
         </form>
@@ -1154,10 +1213,12 @@ export default function ScientistsManagementPage() {
         ) : (
           <ul className="space-y-4">
             {scientists.map((scientist) => {
-              const { userName, userEmail, userId } = getScientistUserLabel(scientist);
+              const { userName, userEmail, userId } =
+                getScientistUserLabel(scientist);
               const assignedSpecialties = getScientistSpecialties(scientist);
               const updateForm =
-                updateFormById[scientist.id] ?? getInitialUpdateScientistForm(scientist);
+                updateFormById[scientist.id] ??
+                getInitialUpdateScientistForm(scientist);
               const updateErrors = updateErrorsById[scientist.id] ?? {};
               const selectedAssignSpecialtyIds =
                 selectedAssignSpecialtyIdsById[scientist.id] ?? [];
@@ -1186,22 +1247,43 @@ export default function ScientistsManagementPage() {
                 removeSpecialtyMutation.variables?.id === scientist.id;
 
               return (
-                <li key={scientist.id} className="rounded-xl border bg-background p-4">
+                <li
+                  key={scientist.id}
+                  className="rounded-xl border bg-background p-4"
+                >
                   <div className="space-y-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="space-y-1">
                         <p className="font-medium">{userName}</p>
-                        <p className="text-sm text-muted-foreground">{userEmail}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {userEmail}
+                        </p>
                         <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
                           <p>Scientist ID: {scientist.id}</p>
                           <p>User ID: {userId || "N/A"}</p>
                           <p>
                             Verified:{" "}
-                            {getScientistBoolean(scientist, "isVerified") ? "Yes" : "No"}
+                            {getScientistBoolean(scientist, "isVerified")
+                              ? "Yes"
+                              : "No"}
                           </p>
-                          <p>Institution: {getScientistString(scientist, "institution") || "N/A"}</p>
-                          <p>Created: {formatDate(getScientistString(scientist, "createdAt"))}</p>
-                          <p>Updated: {formatDate(getScientistString(scientist, "updatedAt"))}</p>
+                          <p>
+                            Institution:{" "}
+                            {getScientistString(scientist, "institution") ||
+                              "N/A"}
+                          </p>
+                          <p>
+                            Created:{" "}
+                            {formatDate(
+                              getScientistString(scientist, "createdAt"),
+                            )}
+                          </p>
+                          <p>
+                            Updated:{" "}
+                            {formatDate(
+                              getScientistString(scientist, "updatedAt"),
+                            )}
+                          </p>
                         </div>
                       </div>
 
@@ -1213,18 +1295,27 @@ export default function ScientistsManagementPage() {
                           onClick={async () => {
                             setFeedback(null);
                             try {
-                              const response = await verifyScientistMutation.mutateAsync({
-                                id: scientist.id,
-                                payload: {
-                                  verified: !getScientistBoolean(scientist, "isVerified"),
-                                },
-                              });
+                              const response =
+                                await verifyScientistMutation.mutateAsync({
+                                  id: scientist.id,
+                                  payload: {
+                                    verified: !getScientistBoolean(
+                                      scientist,
+                                      "isVerified",
+                                    ),
+                                  },
+                                });
                               setFeedback({
                                 type: "success",
-                                text: response.message || "Scientist verification updated.",
+                                text:
+                                  response.message ||
+                                  "Scientist verification updated.",
                               });
                             } catch (error) {
-                              setFeedback({ type: "error", text: getApiErrorMessage(error) });
+                              setFeedback({
+                                type: "error",
+                                text: getApiErrorMessage(error),
+                              });
                             }
                           }}
                         >
@@ -1250,15 +1341,21 @@ export default function ScientistsManagementPage() {
 
                             setFeedback(null);
                             try {
-                              const response = await deleteScientistMutation.mutateAsync({
-                                id: scientist.id,
-                              });
+                              const response =
+                                await deleteScientistMutation.mutateAsync({
+                                  id: scientist.id,
+                                });
                               setFeedback({
                                 type: "success",
-                                text: response.message || "Scientist demoted successfully.",
+                                text:
+                                  response.message ||
+                                  "Scientist demoted successfully.",
                               });
                             } catch (error) {
-                              setFeedback({ type: "error", text: getApiErrorMessage(error) });
+                              setFeedback({
+                                type: "error",
+                                text: getApiErrorMessage(error),
+                              });
                             }
                           }}
                         >
@@ -1268,11 +1365,15 @@ export default function ScientistsManagementPage() {
                     </div>
 
                     <div className="space-y-3 rounded-md border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-sm font-semibold">Update Scientist Profile</p>
+                      <p className="text-sm font-semibold">
+                        Update Scientist Profile
+                      </p>
 
                       <div className="grid gap-3 md:grid-cols-2">
                         <div className="space-y-1">
-                          <Label htmlFor={`update-institution-${scientist.id}`}>Institution</Label>
+                          <Label htmlFor={`update-institution-${scientist.id}`}>
+                            Institution
+                          </Label>
                           <Input
                             id={`update-institution-${scientist.id}`}
                             value={updateForm.institution}
@@ -1309,12 +1410,16 @@ export default function ScientistsManagementPage() {
                             }}
                           />
                           {updateErrors.institution ? (
-                            <p className="text-xs text-red-600">{updateErrors.institution}</p>
+                            <p className="text-xs text-red-600">
+                              {updateErrors.institution}
+                            </p>
                           ) : null}
                         </div>
 
                         <div className="space-y-1">
-                          <Label htmlFor={`update-department-${scientist.id}`}>Department</Label>
+                          <Label htmlFor={`update-department-${scientist.id}`}>
+                            Department
+                          </Label>
                           <Input
                             id={`update-department-${scientist.id}`}
                             value={updateForm.department}
@@ -1351,12 +1456,16 @@ export default function ScientistsManagementPage() {
                             }}
                           />
                           {updateErrors.department ? (
-                            <p className="text-xs text-red-600">{updateErrors.department}</p>
+                            <p className="text-xs text-red-600">
+                              {updateErrors.department}
+                            </p>
                           ) : null}
                         </div>
 
                         <div className="space-y-1">
-                          <Label htmlFor={`update-specialization-${scientist.id}`}>
+                          <Label
+                            htmlFor={`update-specialization-${scientist.id}`}
+                          >
                             Specialization
                           </Label>
                           <Input
@@ -1451,7 +1560,9 @@ export default function ScientistsManagementPage() {
                         </div>
 
                         <div className="space-y-1 md:col-span-2">
-                          <Label htmlFor={`update-qualification-${scientist.id}`}>
+                          <Label
+                            htmlFor={`update-qualification-${scientist.id}`}
+                          >
                             Qualification
                           </Label>
                           <Input
@@ -1490,7 +1601,9 @@ export default function ScientistsManagementPage() {
                             }}
                           />
                           {updateErrors.qualification ? (
-                            <p className="text-xs text-red-600">{updateErrors.qualification}</p>
+                            <p className="text-xs text-red-600">
+                              {updateErrors.qualification}
+                            </p>
                           ) : null}
                         </div>
 
@@ -1604,7 +1717,9 @@ export default function ScientistsManagementPage() {
                             }
                           />
                           {updateErrors.linkedinUrl ? (
-                            <p className="text-xs text-red-600">{updateErrors.linkedinUrl}</p>
+                            <p className="text-xs text-red-600">
+                              {updateErrors.linkedinUrl}
+                            </p>
                           ) : null}
                         </div>
 
@@ -1674,7 +1789,9 @@ export default function ScientistsManagementPage() {
                             }
                           />
                           {updateErrors.profilePhoto ? (
-                            <p className="text-xs text-red-600">{updateErrors.profilePhoto}</p>
+                            <p className="text-xs text-red-600">
+                              {updateErrors.profilePhoto}
+                            </p>
                           ) : null}
                         </div>
                       </div>
@@ -1686,7 +1803,8 @@ export default function ScientistsManagementPage() {
                           disabled={isUpdating}
                           onClick={async () => {
                             setFeedback(null);
-                            const validation = validateUpdateScientistForm(updateForm);
+                            const validation =
+                              validateUpdateScientistForm(updateForm);
                             setUpdateErrorsById((prev) => ({
                               ...prev,
                               [scientist.id]: validation.errors,
@@ -1701,16 +1819,22 @@ export default function ScientistsManagementPage() {
                             }
 
                             try {
-                              const response = await updateScientistMutation.mutateAsync({
-                                id: scientist.id,
-                                payload: validation.data,
-                              });
+                              const response =
+                                await updateScientistMutation.mutateAsync({
+                                  id: scientist.id,
+                                  payload: validation.data,
+                                });
                               setFeedback({
                                 type: "success",
-                                text: response.message || "Scientist updated successfully.",
+                                text:
+                                  response.message ||
+                                  "Scientist updated successfully.",
                               });
                             } catch (error) {
-                              setFeedback({ type: "error", text: getApiErrorMessage(error) });
+                              setFeedback({
+                                type: "error",
+                                text: getApiErrorMessage(error),
+                              });
                             }
                           }}
                         >
@@ -1720,7 +1844,9 @@ export default function ScientistsManagementPage() {
                     </div>
 
                     <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
-                      <p className="text-sm font-semibold">Specialty Management</p>
+                      <p className="text-sm font-semibold">
+                        Specialty Management
+                      </p>
 
                       {assignedSpecialties.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
@@ -1731,7 +1857,8 @@ export default function ScientistsManagementPage() {
                           {assignedSpecialties.map((specialty) => {
                             const removingCurrent =
                               isRemovingSpecialty &&
-                              removeSpecialtyMutation.variables?.specialtyId === specialty.id;
+                              removeSpecialtyMutation.variables?.specialtyId ===
+                                specialty.id;
 
                             return (
                               <button
@@ -1743,10 +1870,12 @@ export default function ScientistsManagementPage() {
                                   setFeedback(null);
                                   try {
                                     const response =
-                                      await removeSpecialtyMutation.mutateAsync({
-                                        id: scientist.id,
-                                        specialtyId: specialty.id,
-                                      });
+                                      await removeSpecialtyMutation.mutateAsync(
+                                        {
+                                          id: scientist.id,
+                                          specialtyId: specialty.id,
+                                        },
+                                      );
                                     setFeedback({
                                       type: "success",
                                       text:
@@ -1761,7 +1890,9 @@ export default function ScientistsManagementPage() {
                                   }
                                 }}
                               >
-                                {removingCurrent ? "Removing..." : `Remove ${specialty.label}`}
+                                {removingCurrent
+                                  ? "Removing..."
+                                  : `Remove ${specialty.label}`}
                               </button>
                             );
                           })}
@@ -1770,7 +1901,9 @@ export default function ScientistsManagementPage() {
 
                       <div className="space-y-3 rounded-md border border-slate-200 bg-white p-3">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-medium">Assign New Specialties</p>
+                          <p className="text-sm font-medium">
+                            Assign New Specialties
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             Selected: {selectedAssignSpecialtyIds.length}
                           </p>
@@ -1805,8 +1938,12 @@ export default function ScientistsManagementPage() {
                           <div className="grid gap-2 md:grid-cols-2">
                             {assignableSpecialties.map((specialty) => {
                               const label = getSpecialtyLabel(specialty);
-                              const description = getSpecialtyDescription(specialty);
-                              const checked = selectedAssignSpecialtyIds.includes(specialty.id);
+                              const description =
+                                getSpecialtyDescription(specialty);
+                              const checked =
+                                selectedAssignSpecialtyIds.includes(
+                                  specialty.id,
+                                );
 
                               return (
                                 <label
@@ -1820,11 +1957,16 @@ export default function ScientistsManagementPage() {
                                     className="mt-0.5 size-4 rounded border-slate-300"
                                     checked={checked}
                                     onChange={() =>
-                                      toggleAssignSpecialty(scientist.id, specialty.id)
+                                      toggleAssignSpecialty(
+                                        scientist.id,
+                                        specialty.id,
+                                      )
                                     }
                                   />
                                   <span className="space-y-1">
-                                    <span className="block font-medium">{label}</span>
+                                    <span className="block font-medium">
+                                      {label}
+                                    </span>
                                     <span className="block text-xs text-muted-foreground">
                                       {description || specialty.id}
                                     </span>
@@ -1858,13 +2000,16 @@ export default function ScientistsManagementPage() {
 
                             setFeedback(null);
                             try {
-                              const response = await assignSpecialtiesMutation.mutateAsync({
-                                id: scientist.id,
-                                payload: { specialtyIds },
-                              });
+                              const response =
+                                await assignSpecialtiesMutation.mutateAsync({
+                                  id: scientist.id,
+                                  payload: { specialtyIds },
+                                });
                               setFeedback({
                                 type: "success",
-                                text: response.message || "Specialties assigned successfully.",
+                                text:
+                                  response.message ||
+                                  "Specialties assigned successfully.",
                               });
                               setSelectedAssignSpecialtyIdsById((prev) => ({
                                 ...prev,
@@ -1875,7 +2020,10 @@ export default function ScientistsManagementPage() {
                                 [scientist.id]: "",
                               }));
                             } catch (error) {
-                              setFeedback({ type: "error", text: getApiErrorMessage(error) });
+                              setFeedback({
+                                type: "error",
+                                text: getApiErrorMessage(error),
+                              });
                             }
                           }}
                         >

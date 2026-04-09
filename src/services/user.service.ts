@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { httpClient } from "@/lib/axios/httpClient";
 import { parseApiData } from "@/lib/api/parse";
+import { nullSchema } from "@/contracts/common";
 import { userSchema } from "@/contracts/user.contract";
 import { normalizeApiError } from "@/lib/errors/api-error";
 import type { ApiListResponse, ApiResponse } from "@/types/api";
@@ -82,5 +83,12 @@ export const userService = {
   async getUsers(): Promise<ApiListResponse<User>> {
     const response = await httpClient.get<unknown>("/users");
     return parseApiData(response, userListSchema);
+  },
+
+  async deleteUser(id: string): Promise<ApiResponse<null>> {
+    const response = await httpClient.delete<unknown>(
+      `/users/${encodeURIComponent(id)}`,
+    );
+    return parseApiData(response, nullSchema);
   },
 };

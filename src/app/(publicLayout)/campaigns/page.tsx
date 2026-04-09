@@ -1,160 +1,176 @@
 "use client";
 
+import { useDeferredValue, useEffect, useState } from "react";
 import {
   CalendarClock,
   CircleCheckBig,
   CircleOff,
+  Globe2,
   Search,
   Sparkles,
+  Tag,
+  Waypoints,
 } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
 import { Input } from "@/components/ui/input";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+  DirectoryBadge,
+  DirectoryDetailCard,
+  DirectoryFieldGrid,
+  DirectoryPaginationSection,
+  DirectorySummaryCard,
+} from "../_components/public-directory-primitives";
+import {
+  PUBLIC_DIRECTORY_PAGE_SIZE,
+  formatDate,
+  getDateSortValue,
+  getDirectoryFields,
+  getPaginationItems,
+  hasText,
+} from "../_lib/public-directory";
 import { useCampaignsQuery } from "@/features/campaign";
 import { getApiErrorMessage } from "@/lib/errors/api-error";
-import { cn } from "@/lib/utils";
 import type { Campaign } from "@/services/campaign.service";
 
-const CAMPAIGNS_PAGE_SIZE = 6;
-
-type PaginationPageItem = number | "ellipsis";
-
-function hasText(value?: string | null) {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function formatDate(value?: string | null) {
-  if (!hasText(value)) {
-    return "Not set";
-  }
-
-  const parsed = new Date(value!);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return "Invalid date";
-  }
-
-  return parsed.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
+const CAMPAIGNS_PAGE_SIZE = PUBLIC_DIRECTORY_PAGE_SIZE;
+const CAMPAIGN_FIELD_OPTIONS = {
+  maxDepth: 2,
+  hideIdentifierFields: true,
+  priorityPaths: [
+    "title",
+    "slug",
+    "description",
+    "startDate",
+    "endDate",
+    "isActive",
+    "isPublic",
+  ],
+};
 
 function getCampaignTitle(campaign: Campaign) {
-  return hasText(campaign.title) ? campaign.title!.trim() : "Untitled campaign";
+  return hasText(campaign.title) ? campaign.title.trim() : "Untitled campaign";
 }
 
 function getCampaignDescription(campaign: Campaign) {
   if (hasText(campaign.description)) {
-    return campaign.description!.trim();
+    return campaign.description.trim();
   }
 
-  return "No campaign description has been added yet.";
+  return "No campaign brief has been published for this listing yet.";
 }
 
 function getCampaignDateRange(campaign: Campaign) {
-  const start = formatDate(campaign.startDate);
-  const end = formatDate(campaign.endDate);
+  const hasStart = hasText(campaign.startDate);
+  const hasEnd = hasText(campaign.endDate);
 
-  if (start === "Not set" && end === "Not set") {
-    return "Date range not configured";
+  if (!hasStart && !hasEnd) {
+    return "Timeline not configured";
   }
 
-  return `${start} to ${end}`;
+  return `${formatDate(campaign.startDate, "Start not set")} to ${formatDate(
+    campaign.endDate,
+    "End not set",
+  )}`;
 }
 
-function getPaginationItems(
-  totalPages: number,
-  currentPage: number,
-): PaginationPageItem[] {
-  if (totalPages <= 1) {
-    return [1];
-  }
-
-  const pages = new Set<number>([
-    1,
-    totalPages,
-    currentPage - 1,
-    currentPage,
-    currentPage + 1,
-  ]);
-
-  if (currentPage <= 3) {
-    pages.add(2);
-    pages.add(3);
-  }
-
-  if (currentPage >= totalPages - 2) {
-    pages.add(totalPages - 1);
-    pages.add(totalPages - 2);
-  }
-
-  const sortedPages = [...pages]
-    .filter((page) => page >= 1 && page <= totalPages)
-    .sort((a, b) => a - b);
-
-  const items: PaginationPageItem[] = [];
-
-  sortedPages.forEach((page, index) => {
-    const previousPage = sortedPages[index - 1];
-
-    if (typeof previousPage === "number" && page - previousPage > 1) {
-      items.push("ellipsis");
-    }
-
-    items.push(page);
-  });
-
-  return items;
+function getCampaignVisibility(campaign: Campaign) {
+  return campaign.isPublic === true ? "Public listing" : "Private listing";
 }
 
-function StatusBadge({
-  active,
-  label,
-}: {
-  active: boolean;
-  label: string;
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium",
-        active
-          ? "bg-emerald-100 text-emerald-800"
-          : "bg-slate-100 text-slate-700",
-      )}
-    >
-      {active ? (
-        <CircleCheckBig className="size-3.5" />
-      ) : (
-        <CircleOff className="size-3.5" />
-      )}
-      {label}
-    </span>
-  );
+function getCampaignOperationalState(campaign: Campaign) {
+  if (campaign.isActive === true) {
+    return "Running now";
+  }
+
+  if (hasText(campaign.startDate) || hasText(campaign.endDate)) {
+    return "Scheduled or archived";
+  }
+
+  return "Draft setup";
+}
+
+function getCampaignMomentumLabel(campaign: Campaign) {
+  if (campaign.isActive === true && campaign.isPublic === true) {
+    return "Public and currently in motion";
+  }
+
+  if (campaign.isActive === true) {
+    return "Operational but not publicly listed";
+  }
+
+  if (campaign.isPublic === true) {
+    return "Visible archive or pre-launch listing";
+  }
+
+  return "Internal or limited visibility record";
+}
+
+function getCampaignFields(campaign: Campaign) {
+  return getDirectoryFields(campaign, CAMPAIGN_FIELD_OPTIONS);
+}
+
+function getCampaignSearchText(campaign: Campaign) {
+  return getCampaignFields(campaign)
+    .map((field) => `${field.label} ${field.value}`)
+    .join(" ")
+    .toLowerCase();
+}
+
+function compareCampaigns(a: Campaign, b: Campaign) {
+  if (a.isActive === true && b.isActive !== true) {
+    return -1;
+  }
+
+  if (a.isActive !== true && b.isActive === true) {
+    return 1;
+  }
+
+  const dateDifference = getDateSortValue(b.startDate) - getDateSortValue(a.startDate);
+
+  if (dateDifference !== 0) {
+    return dateDifference;
+  }
+
+  return getCampaignTitle(a).localeCompare(getCampaignTitle(b));
 }
 
 export default function CampaignsPage() {
   const campaignsQuery = useCampaignsQuery();
   const [searchValue, setSearchValue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const deferredSearchValue = useDeferredValue(searchValue);
+
+  const campaigns = [...(campaignsQuery.data?.data ?? [])].sort(compareCampaigns);
+  const activeQuery = deferredSearchValue.trim();
+  const normalizedSearch = activeQuery.toLowerCase();
+  const filteredCampaigns = normalizedSearch
+    ? campaigns.filter((campaign) =>
+        getCampaignSearchText(campaign).includes(normalizedSearch),
+      )
+    : campaigns;
+
+  const totalCampaigns = filteredCampaigns.length;
+  const activeCampaigns = filteredCampaigns.filter(
+    (campaign) => campaign.isActive === true,
+  ).length;
+  const publicCampaigns = filteredCampaigns.filter(
+    (campaign) => campaign.isPublic === true,
+  ).length;
+  const scheduledCampaigns = filteredCampaigns.filter(
+    (campaign) => hasText(campaign.startDate) || hasText(campaign.endDate),
+  ).length;
+  const totalPages = Math.max(1, Math.ceil(totalCampaigns / CAMPAIGNS_PAGE_SIZE));
+
+  useEffect(() => {
+    setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
+  }, [totalPages]);
 
   if (campaignsQuery.isPending) {
     return (
       <main className="public-page-shell">
         <LoadingState
-          rows={6}
+          rows={4}
           title="Loading campaigns"
           description="Fetching public campaigns from the backend."
           className="surface-card p-5"
@@ -178,28 +194,6 @@ export default function CampaignsPage() {
     );
   }
 
-  const campaigns = campaignsQuery.data?.data ?? [];
-  const normalizedSearch = searchValue.trim().toLowerCase();
-
-  const filteredCampaigns = normalizedSearch
-    ? campaigns.filter((campaign) => {
-        const fields = [
-          campaign.title,
-          campaign.description,
-          campaign.slug,
-          campaign.id,
-        ];
-
-        return fields.some(
-          (field) =>
-            typeof field === "string" &&
-            field.toLowerCase().includes(normalizedSearch),
-        );
-      })
-    : campaigns;
-
-  const totalCampaigns = filteredCampaigns.length;
-  const totalPages = Math.max(1, Math.ceil(totalCampaigns / CAMPAIGNS_PAGE_SIZE));
   const activePage = Math.min(currentPage, totalPages);
   const pageStartIndex = (activePage - 1) * CAMPAIGNS_PAGE_SIZE;
   const pageCampaigns = filteredCampaigns.slice(
@@ -211,72 +205,119 @@ export default function CampaignsPage() {
     totalCampaigns === 0
       ? 0
       : Math.min(pageStartIndex + pageCampaigns.length, totalCampaigns);
-  const activeCampaigns = filteredCampaigns.filter(
-    (campaign) => campaign.isActive === true,
-  ).length;
-  const publicCampaigns = filteredCampaigns.filter(
-    (campaign) => campaign.isPublic === true,
-  ).length;
   const paginationItems = getPaginationItems(totalPages, activePage);
   const disablePrevious = activePage <= 1;
   const disableNext = activePage >= totalPages;
 
   return (
     <main className="public-page-shell">
-      <section className="surface-card grid gap-6 p-7 lg:grid-cols-[minmax(0,1fr)_16rem] lg:p-8">
-        <div className="space-y-4">
-          <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
-            <Sparkles className="size-3.5" />
-            Campaign Directory
-          </span>
+      <section className="surface-card overflow-hidden">
+        <div className="relative overflow-hidden p-7 lg:p-8">
+          <div className="absolute inset-y-0 right-0 hidden w-2/5 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.22),transparent_58%),linear-gradient(135deg,rgba(15,23,42,1),rgba(8,47,73,0.94))] lg:block" />
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
+          <div className="space-y-5">
+            <DirectoryBadge
+              icon={Sparkles}
+              label="Campaign Operations"
+              tone="accent"
+            />
 
-          <div className="space-y-3">
-            <h1 className="section-title">
-              Track every sustainability campaign in one place.
-            </h1>
-            <p className="max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
-              Review campaign scope, timeline, and visibility with a clean
-              portfolio view designed for operational teams.
+            <div className="space-y-3">
+              <h1 className="section-title">
+                Review public sustainability campaigns with clearer operational
+                context.
+              </h1>
+              <p className="max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
+                This directory surfaces live status, publication visibility, and
+                campaign timing in a structure that is easier to scan during
+                stakeholder reviews and public reporting.
+              </p>
+              {campaignsQuery.data?.message ? (
+                <p className="text-sm text-slate-500">
+                  {campaignsQuery.data.message}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-wrap gap-3 text-sm text-slate-600">
+              <span className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1.5 text-teal-800">
+                Sorted with active campaigns first
+              </span>
+              <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-cyan-800">
+                Two campaigns per page
+              </span>
+            </div>
+          </div>
+
+          <div className="relative rounded-[1.9rem] border border-slate-800/40 bg-slate-950 p-5 text-white shadow-[0_30px_80px_-45px_rgba(15,23,42,0.85)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+              Live overview
             </p>
-            {campaignsQuery.data?.message ? (
-              <p className="text-sm text-slate-500">{campaignsQuery.data.message}</p>
-            ) : null}
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <DirectorySummaryCard
+                label="Matching"
+                value={totalCampaigns.toLocaleString()}
+                caption="Campaigns in the current result set"
+                inverse
+                className="bg-teal-400/10"
+              />
+              <DirectorySummaryCard
+                label="Active"
+                value={activeCampaigns.toLocaleString()}
+                caption="Records marked as operational"
+                inverse
+                className="bg-emerald-400/10"
+              />
+              <DirectorySummaryCard
+                label="Public"
+                value={publicCampaigns.toLocaleString()}
+                caption="Visible listings for broader audiences"
+                inverse
+                className="bg-cyan-400/10"
+              />
+              <DirectorySummaryCard
+                label="Scheduled"
+                value={scheduledCampaigns.toLocaleString()}
+                caption="Records with a defined timeline"
+                inverse
+                className="bg-sky-400/10"
+              />
+            </div>
           </div>
         </div>
-
-        <div className="surface-muted grid gap-3 p-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Matching campaigns
-            </p>
-            <p className="mt-2 text-3xl font-semibold text-slate-950">
-              {totalCampaigns.toLocaleString()}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Active</p>
-              <p className="mt-1 font-semibold text-slate-900">
-                {activeCampaigns.toLocaleString()}
-              </p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Public</p>
-              <p className="mt-1 font-semibold text-slate-900">
-                {publicCampaigns.toLocaleString()}
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
-      <section className="surface-card space-y-3 p-4 sm:p-5">
+      <section className="surface-card space-y-4 p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-2">
+            <p className="section-kicker">Directory Controls</p>
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
+              Search campaign records quickly
+            </h2>
+            <p className="text-sm leading-6 text-slate-600">
+              Filter by campaign title, slug, description, visibility, or operational state.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/85 px-4 py-3 text-right">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+              Page Status
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-900">
+              Page {activePage} of {totalPages}
+            </p>
+            <p className="text-xs text-slate-500">
+              {CAMPAIGNS_PAGE_SIZE} campaigns per page
+            </p>
+          </div>
+        </div>
+
         <form
           className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
           onSubmit={(event) => {
             event.preventDefault();
-            setCurrentPage(1);
           }}
         >
           <label className="relative block">
@@ -287,171 +328,183 @@ export default function CampaignsPage() {
                 setSearchValue(event.target.value);
                 setCurrentPage(1);
               }}
-              placeholder="Search by campaign title, slug, description, or ID"
-              className="h-10 border-slate-200 bg-white pl-9"
+              placeholder="Search by campaign title, slug, description, or visibility"
+              className="h-11 rounded-2xl border-slate-200 bg-white pl-9 shadow-sm"
             />
           </label>
 
           <Button
             type="button"
             variant="outline"
-            className="h-10 rounded-full border-slate-200 px-5 text-slate-700 hover:bg-slate-50"
+            className="h-11 rounded-2xl border-slate-200 px-5 text-slate-700 hover:bg-slate-50"
             onClick={() => {
               setSearchValue("");
               setCurrentPage(1);
             }}
-            disabled={!normalizedSearch}
+            disabled={!searchValue.trim()}
           >
             Clear search
           </Button>
         </form>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
-          <p>
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 font-medium text-slate-700">
             Showing {rangeStart}-{rangeEnd} of {totalCampaigns.toLocaleString()}
-          </p>
-          {normalizedSearch ? (
+          </span>
+          {activeQuery ? (
             <p>
               Search:{" "}
-              <span className="font-medium text-slate-800">{searchValue.trim()}</span>
+              <span className="font-medium text-slate-900">{activeQuery}</span>
             </p>
           ) : (
-            <p>Showing all campaigns</p>
+            <p>Showing all public campaign records</p>
           )}
         </div>
+
+        <p className="text-xs text-slate-500">
+          Results update as you type and stay grouped into compact review pages.
+        </p>
       </section>
 
       {totalCampaigns === 0 ? (
         <EmptyState
           title="No campaigns found"
           description={
-            normalizedSearch
-              ? "Try a different search keyword."
+            activeQuery
+              ? "Try a different keyword or clear the search field."
               : "No campaigns are available right now."
           }
-          className="surface-card p-5"
+          className="surface-card p-6"
         />
       ) : (
-        <section className="grid gap-5 lg:grid-cols-2">
+        <section className="space-y-5">
           {pageCampaigns.map((campaign) => (
-            <article key={campaign.id} className="surface-card p-6">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-2">
-                  <h2 className="text-xl font-semibold tracking-tight text-slate-950">
-                    {getCampaignTitle(campaign)}
-                  </h2>
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                    ID: {campaign.id}
-                  </p>
-                </div>
+            <article key={campaign.id} className="surface-card overflow-hidden">
+              <div className="border-b border-teal-100 bg-[linear-gradient(135deg,rgba(236,253,245,0.92),rgba(224,242,254,0.95),rgba(248,250,252,0.98))] px-6 py-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <DirectoryBadge
+                        icon={
+                          campaign.isActive === true
+                            ? CircleCheckBig
+                            : CircleOff
+                        }
+                        label={
+                          campaign.isActive === true ? "Active" : "Inactive"
+                        }
+                        tone={campaign.isActive === true ? "success" : "neutral"}
+                        className="normal-case tracking-normal"
+                      />
+                      <DirectoryBadge
+                        icon={Globe2}
+                        label={
+                          campaign.isPublic === true ? "Public" : "Private"
+                        }
+                        tone={
+                          campaign.isPublic === true ? "accent" : "neutral"
+                        }
+                        className="normal-case tracking-normal"
+                      />
+                    </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <StatusBadge active={campaign.isActive === true} label={campaign.isActive ? "Active" : "Inactive"} />
-                  <StatusBadge active={campaign.isPublic === true} label={campaign.isPublic ? "Public" : "Private"} />
+                    <div>
+                      <p className="section-kicker">Campaign Record</p>
+                      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                        {getCampaignTitle(campaign)}
+                      </h2>
+                      <p className="mt-2 text-sm text-slate-600">
+                        {getCampaignMomentumLabel(campaign)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-teal-200 bg-white/90 px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Operational State
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-slate-900">
+                      {getCampaignOperationalState(campaign)}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <p className="mt-4 text-sm leading-7 text-slate-600">
-                {getCampaignDescription(campaign)}
-              </p>
+              <div className="space-y-6 p-6">
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="section-kicker">Campaign Brief</p>
+                      <p className="mt-3 text-sm leading-7 text-slate-600">
+                        {getCampaignDescription(campaign)}
+                      </p>
+                    </div>
 
-              <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
-                <div className="surface-muted flex items-center gap-2 px-3 py-2 text-slate-700">
-                  <CalendarClock className="size-4 text-slate-400" />
-                  <span>{getCampaignDateRange(campaign)}</span>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
+                      <p className="section-kicker">Presentation Note</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                        This entry is currently presented as a{" "}
+                        {getCampaignVisibility(campaign).toLowerCase()} and is
+                        tracked as{" "}
+                        {getCampaignOperationalState(campaign).toLowerCase()}.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3">
+                    <DirectoryDetailCard
+                      icon={CalendarClock}
+                      label="Timeline"
+                      value={getCampaignDateRange(campaign)}
+                      className="border-teal-100 bg-teal-50/60"
+                    />
+                    <DirectoryDetailCard
+                      icon={Tag}
+                      label="Slug"
+                      value={
+                        hasText(campaign.slug)
+                          ? campaign.slug
+                          : "Slug not configured"
+                      }
+                      className="border-cyan-100 bg-cyan-50/60"
+                    />
+                    <DirectoryDetailCard
+                      icon={Globe2}
+                      label="Visibility"
+                      value={getCampaignVisibility(campaign)}
+                      className="border-sky-100 bg-sky-50/60"
+                    />
+                    <DirectoryDetailCard
+                      icon={Waypoints}
+                      label="Momentum"
+                      value={getCampaignMomentumLabel(campaign)}
+                      className="border-emerald-100 bg-emerald-50/60"
+                    />
+                  </div>
                 </div>
-                <div className="surface-muted px-3 py-2 text-slate-700">
-                  <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                    Slug
-                  </p>
-                  <p className="mt-1 font-medium text-slate-900">
-                    {hasText(campaign.slug) ? campaign.slug : "Not set"}
-                  </p>
-                </div>
+
+                <DirectoryFieldGrid
+                  title="Published Fields"
+                  fields={getCampaignFields(campaign)}
+                />
               </div>
-
-              <details className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <summary className="cursor-pointer text-sm font-medium text-slate-800">
-                  View raw payload
-                </summary>
-                <pre className="mt-3 overflow-x-auto rounded-xl bg-white p-3 text-xs leading-5 text-slate-700">
-                  {JSON.stringify(campaign, null, 2)}
-                </pre>
-              </details>
             </article>
           ))}
         </section>
       )}
 
       {totalPages > 1 ? (
-        <section className="surface-card grid gap-3 p-4">
-          <Pagination>
-            <PaginationContent className="flex-wrap items-center justify-center gap-2">
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  className={cn(disablePrevious && "pointer-events-none opacity-50")}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    if (disablePrevious) {
-                      return;
-                    }
-                    setCurrentPage(Math.max(1, activePage - 1));
-                  }}
-                />
-              </PaginationItem>
-
-              {paginationItems.map((item, index) => {
-                if (item === "ellipsis") {
-                  return (
-                    <PaginationItem key={`ellipsis-${index}`}>
-                      <PaginationEllipsis />
-                    </PaginationItem>
-                  );
-                }
-
-                const isActivePage = item === activePage;
-
-                return (
-                  <PaginationItem key={`page-${item}`}>
-                    <PaginationLink
-                      href="#"
-                      isActive={isActivePage}
-                      className={cn(isActivePage && "pointer-events-none")}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        if (isActivePage) {
-                          return;
-                        }
-                        setCurrentPage(item);
-                      }}
-                    >
-                      {item}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              })}
-
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  className={cn(disableNext && "pointer-events-none opacity-50")}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    if (disableNext) {
-                      return;
-                    }
-                    setCurrentPage(Math.min(totalPages, activePage + 1));
-                  }}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-
-          <p className="text-center text-xs uppercase tracking-[0.14em] text-slate-500">
-            Page {activePage} of {totalPages}
-          </p>
-        </section>
+        <DirectoryPaginationSection
+          currentPage={activePage}
+          totalPages={totalPages}
+          paginationItems={paginationItems}
+          onPageChange={(page) => {
+            setCurrentPage(page);
+          }}
+          disablePrevious={disablePrevious}
+          disableNext={disableNext}
+          description={`Page ${activePage} of ${totalPages}. ${pageCampaigns.length} campaigns are shown on this page.`}
+        />
       ) : null}
     </main>
   );
