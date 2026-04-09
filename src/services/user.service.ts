@@ -1,7 +1,9 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { httpClient } from "@/lib/axios/httpClient";
 import { parseApiData } from "@/lib/api/parse";
-import { nullSchema } from "@/contracts/common";
+import { idSchema, nullSchema } from "@/contracts/common";
+import { ideaSchema } from "@/contracts/idea.contract";
+import { commentSchema, voteTypeSchema } from "@/contracts/interaction.contract";
 import { userSchema } from "@/contracts/user.contract";
 import { normalizeApiError } from "@/lib/errors/api-error";
 import type { ApiListResponse, ApiResponse } from "@/types/api";
@@ -13,12 +15,51 @@ export type UpdateMyProfileInput = {
   image?: File | null;
 };
 
+type UserQueryOptions = {
+  params?: Record<string, unknown>;
+  signal?: AbortSignal;
+};
+
 const userListSchema = z.array(userSchema);
+const userVoteSchema = z
+  .object({
+    id: idSchema,
+    ideaId: idSchema,
+    userId: idSchema.optional(),
+    type: voteTypeSchema,
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+    idea: ideaSchema.nullable().optional(),
+  })
+  .passthrough();
+const commentParentSchema = z
+  .object({
+    id: idSchema,
+    content: z.string().optional(),
+    author: userSchema.nullable().optional(),
+  })
+  .passthrough();
+const userCommentSchema = commentSchema
+  .extend({
+    authorId: idSchema.optional(),
+    isEdited: z.boolean().optional(),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+    idea: ideaSchema.nullable().optional(),
+    author: userSchema.nullable().optional(),
+    parent: commentParentSchema.nullable().optional(),
+  })
+  .passthrough();
+const userVoteListSchema = z.array(userVoteSchema);
+const userCommentListSchema = z.array(userCommentSchema);
 const myProfileCandidateEndpoints = [
   "/users/me",
   "/users/profile",
   "/users/my-profile",
 ] as const;
+
+export type UserVote = z.infer<typeof userVoteSchema>;
+export type UserComment = z.infer<typeof userCommentSchema>;
 
 function buildProfileFormData(payload: UpdateMyProfileInput) {
   const formData = new FormData();
@@ -83,6 +124,28 @@ export const userService = {
   async getUsers(): Promise<ApiListResponse<User>> {
     const response = await httpClient.get<unknown>("/users");
     return parseApiData(response, userListSchema);
+  },
+
+  async getMyVotes(
+    options: UserQueryOptions = {},
+  ): Promise<ApiListResponse<UserVote>> {
+    const response = await httpClient.get<unknown>("/users/me/votes", {
+      params: options.params,
+      signal: options.signal,
+    });
+
+    return parseApiData(response, userVoteListSchema);
+  },
+
+  async getMyComments(
+    options: UserQueryOptions = {},
+  ): Promise<ApiListResponse<UserComment>> {
+    const response = await httpClient.get<unknown>("/users/me/comments", {
+      params: options.params,
+      signal: options.signal,
+    });
+
+    return parseApiData(response, userCommentListSchema);
   },
 
   async deleteUser(id: string): Promise<ApiResponse<null>> {

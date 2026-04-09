@@ -1,4 +1,4 @@
-import type { NavSection } from "@/types/dashboard.types";
+﻿import type { NavSection } from "@/types/dashboard.types";
 import { getDefaultDashboardRoute, type UserRole } from "./authUtils";
 
 export const getCommonNavItems = (role: UserRole): NavSection[] => {
@@ -21,6 +21,26 @@ export const getCommonNavItems = (role: UserRole): NavSection[] => {
           title: "My Profile",
           href: "/my-profile",
           icon: "User",
+        },
+      ],
+    },
+    {
+      title: "My Activity",
+      items: [
+        {
+          title: "My Votes",
+          href: "/my-vote",
+          icon: "ThumbsUp",
+        },
+        {
+          title: "My Comments",
+          href: "/my-comment",
+          icon: "MessageSquare",
+        },
+        {
+          title: "Saved Ideas",
+          href: "/saved-ideas",
+          icon: "Bookmark",
         },
       ],
     },
@@ -142,30 +162,11 @@ export const memberNavItems: NavSection[] = [
         href: "/dashboard/browse-ideas",
         icon: "Compass",
       },
-      {
-        title: "Saved Ideas",
-        href: "/dashboard/saved-ideas",
-        icon: "Bookmark",
-      },
+
       {
         title: "Purchase Ideas",
         href: "/dashboard/purches-idea",
         icon: "ShoppingCart",
-      },
-    ],
-  },
-  {
-    title: "My Activity",
-    items: [
-      {
-        title: "My Votes",
-        href: "/dashboard/my-votes",
-        icon: "ThumbsUp",
-      },
-      {
-        title: "My Comments",
-        href: "/dashboard/my-comments",
-        icon: "MessageSquare",
       },
     ],
   },
@@ -189,3 +190,4 @@ export const getNavItemsByRole = (role: UserRole): NavSection[] => {
       return commonNavItems;
   }
 };
+

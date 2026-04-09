@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
@@ -45,7 +45,7 @@ const memberLinks: ShortcutLink[] = [
   {
     title: "Saved Ideas",
     description: "Return to the ideas you bookmarked for later review.",
-    href: "/dashboard/saved-ideas",
+    href: "/saved-ideas",
     icon: Bookmark,
     tone: "emerald",
   },
@@ -59,14 +59,14 @@ const memberLinks: ShortcutLink[] = [
   {
     title: "My Votes",
     description: "Review the ideas you have supported or rated.",
-    href: "/dashboard/my-votes",
+    href: "/my-vote",
     icon: ThumbsUp,
     tone: "rose",
   },
   {
     title: "My Comments",
     description: "Revisit your discussion history across idea pages.",
-    href: "/dashboard/my-comments",
+    href: "/my-comment",
     icon: MessageSquare,
     tone: "sky",
   },
@@ -819,3 +819,4 @@ export function MemberDashboardOverview() {
     </section>
   );
 }
+
