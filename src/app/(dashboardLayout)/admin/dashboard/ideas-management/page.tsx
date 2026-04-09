@@ -1,5 +1,5 @@
-import { AdminIdeaView } from "../_components/admin-idea-view";
+import { AdminIdeasManagementWorkspace } from "./_components/admin-ideas-management-workspace";
 
 export default function IdeasManagementPage() {
-  return <AdminIdeaView mode="ideas-management" />;
+  return <AdminIdeasManagementWorkspace />;
 }
