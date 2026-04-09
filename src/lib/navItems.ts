@@ -119,7 +119,16 @@ export const adminNavItems: NavSection[] = [
         href: "/admin/dashboard/specialty-management",
         icon: "Stethoscope",
       },
-
+    ],
+  },
+  {
+    title: "Analytics",
+    items: [
+      {
+        title: "All-Purchases",
+        href: "/admin/dashboard/all-purchases",
+        icon: " ChartBar",
+      },
     ],
   },
 ];
@@ -180,5 +189,3 @@ export const getNavItemsByRole = (role: UserRole): NavSection[] => {
       return commonNavItems;
   }
 };
-
-
