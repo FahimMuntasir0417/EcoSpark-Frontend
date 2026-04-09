@@ -1,5 +1,5 @@
-import { ScientistIdeaView } from "./_components/scientist-idea-view";
+import { ScientistDashboardOverview } from "./_components/scientist-dashboard-overview";
 
 export default function ScientistDashboardPage() {
-  return <ScientistIdeaView mode="overview" />;
+  return <ScientistDashboardOverview />;
 }
