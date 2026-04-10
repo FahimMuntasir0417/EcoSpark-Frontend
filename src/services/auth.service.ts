@@ -86,19 +86,4 @@ export const authService = {
     const response = await httpClient.post<unknown>("/auth/reset-password", parsedPayload);
     return parseApiData(response, authActionResultSchema);
   },
-
-  async getGoogleLogin() {
-    const response = await httpClient.get<unknown>("/auth/login/google");
-    return parseApiData(response, authActionResultSchema);
-  },
-
-  async getGoogleLoginSuccess() {
-    const response = await httpClient.get<unknown>("/auth/google/success");
-    return parseApiData(response, authActionResultSchema);
-  },
-
-  async getOAuthError() {
-    const response = await httpClient.get<unknown>("/auth/oauth/error");
-    return parseApiData(response, authActionResultSchema);
-  },
 };

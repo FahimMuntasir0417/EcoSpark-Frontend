@@ -78,9 +78,3 @@ export function useResetPasswordMutation() {
     mutationFn: (payload: ResetPasswordInput) => authService.resetPassword(payload),
   });
 }
-
-export function useGoogleLoginMutation() {
-  return useMutation({
-    mutationFn: () => authService.getGoogleLogin(),
-  });
-}

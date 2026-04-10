@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   AuthFeedback,
   AuthFormField,
@@ -184,10 +185,9 @@ export default function ResetPasswordPage() {
                 label="New Password"
                 error={fieldError}
               >
-                <Input
+                <PasswordInput
                   id={field.name}
                   name={field.name}
-                  type="password"
                   placeholder="New password"
                   value={field.state.value}
                   onBlur={field.handleBlur}

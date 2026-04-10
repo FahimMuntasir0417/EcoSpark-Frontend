@@ -2,7 +2,7 @@
 
 import { type FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useChangePasswordMutation } from "@/features/auth";
 import { getApiErrorMessage } from "@/lib/errors/api-error";
 
@@ -102,24 +102,21 @@ export default function ChangePasswordPage() {
       ) : null}
 
       <form className="max-w-xl space-y-4 rounded-xl border bg-background p-4" onSubmit={onSubmit}>
-        <Input
-          type="password"
+        <PasswordInput
           placeholder="Current password"
           value={form.currentPassword}
           onChange={(event) =>
             setForm((prev) => ({ ...prev, currentPassword: event.target.value }))
           }
         />
-        <Input
-          type="password"
+        <PasswordInput
           placeholder="New password"
           value={form.newPassword}
           onChange={(event) =>
             setForm((prev) => ({ ...prev, newPassword: event.target.value }))
           }
         />
-        <Input
-          type="password"
+        <PasswordInput
           placeholder="Confirm new password"
           value={form.confirmPassword}
           onChange={(event) =>
