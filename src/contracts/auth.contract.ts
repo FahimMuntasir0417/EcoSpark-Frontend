@@ -16,8 +16,9 @@ export const forgetPasswordInputSchema = z.object({
 });
 
 export const resetPasswordInputSchema = z.object({
-  token: z.string().min(1),
-  password: z.string().min(6),
+  email: z.string().email(),
+  otp: z.string().min(1),
+  newPassword: z.string().min(6),
 });
 
 export const verifyEmailInputSchema = z.object({
@@ -49,10 +50,7 @@ export const authTokenPayloadSchema = z
   })
   .passthrough();
 
-export const authActionResultSchema = z.union([
-  z.record(z.string(), z.unknown()),
-  z.null(),
-]);
+export const authActionResultSchema = z.unknown().optional();
 
 export type LoginInput = z.infer<typeof loginInputSchema>;
 export type RegisterInput = z.infer<typeof registerInputSchema>;

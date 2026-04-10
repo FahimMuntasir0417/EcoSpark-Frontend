@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   AuthFeedback,
   AuthFormField,
+  LOGIN_NOTICE_KEY,
+  PASSWORD_RESET_COMPLETE_NOTICE,
+  PASSWORD_RESET_NOTICE_KEY,
+  PENDING_PASSWORD_RESET_EMAIL_KEY,
+  type ResetPasswordFormValues,
   authFieldSchemas,
   createZodFieldValidator,
   getApiErrorMessage,
@@ -18,15 +24,17 @@ import {
 import type { FormFeedback } from "@/features/auth";
 import type { ResetPasswordInput } from "@/services/auth.service";
 
-const initialFormState: ResetPasswordInput = {
-  token: "",
-  password: "",
+const initialFormState: ResetPasswordFormValues = {
+  otp: "",
+  newPassword: "",
 };
 
 export default function ResetPasswordPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const resetPasswordMutation = useResetPasswordMutation();
   const [feedback, setFeedback] = useState<FormFeedback | null>(null);
+  const [resolvedEmail, setResolvedEmail] = useState("");
 
   const form = useForm({
     defaultValues: initialFormState,
@@ -37,14 +45,37 @@ export default function ResetPasswordPage() {
       setFeedback(null);
 
       try {
-        const payload: ResetPasswordInput = resetPasswordFormSchema.parse(value);
+        const parsed = resetPasswordFormSchema.parse(value);
+        const email = resolvedEmail.trim();
+
+        if (!email) {
+          setFeedback({
+            type: "error",
+            text: "Email context not found. Start from forgot password and request a new OTP.",
+          });
+          return;
+        }
+
+        const payload: ResetPasswordInput = {
+          email,
+          otp: parsed.otp,
+          newPassword: parsed.newPassword,
+        };
+
         const response = await resetPasswordMutation.mutateAsync(payload);
 
-        form.setFieldValue("password", "");
-        setFeedback({
-          type: "success",
-          text: response.message || "Password reset successful.",
-        });
+        form.reset();
+
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem(PENDING_PASSWORD_RESET_EMAIL_KEY);
+          window.sessionStorage.removeItem(PASSWORD_RESET_NOTICE_KEY);
+          window.sessionStorage.setItem(
+            LOGIN_NOTICE_KEY,
+            response.message || PASSWORD_RESET_COMPLETE_NOTICE,
+          );
+        }
+
+        router.replace("/login");
       } catch (error) {
         setFeedback({ type: "error", text: getApiErrorMessage(error) });
       }
@@ -52,16 +83,47 @@ export default function ResetPasswordPage() {
   });
 
   useEffect(() => {
-    const tokenFromQuery = searchParams.get("token");
+    const emailFromQuery = searchParams.get("email")?.trim() ?? "";
+    const otpFromQuery = searchParams.get("otp") ?? searchParams.get("token");
 
-    if (tokenFromQuery && tokenFromQuery !== form.state.values.token) {
-      form.setFieldValue("token", tokenFromQuery);
+    if (emailFromQuery) {
+      setResolvedEmail(emailFromQuery);
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(PENDING_PASSWORD_RESET_EMAIL_KEY, emailFromQuery);
+      }
+    } else if (typeof window !== "undefined") {
+      const savedEmail =
+        window.localStorage.getItem(PENDING_PASSWORD_RESET_EMAIL_KEY)?.trim() ?? "";
+
+      if (savedEmail) {
+        setResolvedEmail(savedEmail);
+      }
+    }
+
+    if (otpFromQuery && otpFromQuery !== form.state.values.otp) {
+      form.setFieldValue("otp", otpFromQuery);
+    }
+
+    if (typeof window !== "undefined") {
+      const savedNotice =
+        window.sessionStorage.getItem(PASSWORD_RESET_NOTICE_KEY)?.trim() ?? "";
+
+      if (savedNotice) {
+        setFeedback({ type: "success", text: savedNotice });
+        window.sessionStorage.removeItem(PASSWORD_RESET_NOTICE_KEY);
+      }
     }
   }, [form, searchParams]);
+
+  const emailHint = resolvedEmail
+    ? `Resetting password for: ${resolvedEmail}`
+    : "No reset email found yet. Start from forgot password to receive an OTP.";
 
   return (
     <main className="mx-auto w-full max-w-md space-y-4 p-6">
       <h1 className="text-2xl font-semibold">Reset Password</h1>
+      <p className="text-sm text-muted-foreground">{emailHint}</p>
 
       <AuthFeedback feedback={feedback} />
 
@@ -74,10 +136,10 @@ export default function ResetPasswordPage() {
         }}
       >
         <form.Field
-          name="token"
+          name="otp"
           validators={{
-            onBlur: createZodFieldValidator(authFieldSchemas.token),
-            onChange: createZodFieldValidator(authFieldSchemas.token),
+            onBlur: createZodFieldValidator(authFieldSchemas.otp),
+            onChange: createZodFieldValidator(authFieldSchemas.otp),
           }}
         >
           {(field) => {
@@ -88,13 +150,13 @@ export default function ResetPasswordPage() {
             return (
               <AuthFormField
                 id={field.name}
-                label="Reset Token"
+                label="OTP"
                 error={fieldError}
               >
                 <Input
                   id={field.name}
                   name={field.name}
-                  placeholder="Reset token"
+                  placeholder="Enter OTP"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
@@ -105,7 +167,7 @@ export default function ResetPasswordPage() {
         </form.Field>
 
         <form.Field
-          name="password"
+          name="newPassword"
           validators={{
             onBlur: createZodFieldValidator(authFieldSchemas.securePassword),
             onChange: createZodFieldValidator(authFieldSchemas.securePassword),
@@ -139,6 +201,15 @@ export default function ResetPasswordPage() {
         <Button type="submit" disabled={resetPasswordMutation.isPending}>
           {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
         </Button>
+
+        {!resolvedEmail ? (
+          <Link
+            href="/forgot-password"
+            className={buttonVariants({ variant: "outline" })}
+          >
+            Back to Forgot Password
+          </Link>
+        ) : null}
       </form>
     </main>
   );

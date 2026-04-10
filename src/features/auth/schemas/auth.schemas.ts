@@ -11,7 +11,6 @@ const loginPasswordSchema = z.string().min(1, "Password is required.");
 const securePasswordSchema = z
   .string()
   .min(6, "Password must be at least 6 characters.");
-const tokenSchema = z.string().trim().min(1, "Token is required.");
 
 export const authFieldSchemas = {
   name: nameSchema,
@@ -19,7 +18,6 @@ export const authFieldSchemas = {
   otp: otpSchema,
   loginPassword: loginPasswordSchema,
   securePassword: securePasswordSchema,
-  token: tokenSchema,
 } as const;
 
 export const registerFormSchema = z.object({
@@ -38,8 +36,8 @@ export const forgotPasswordFormSchema = z.object({
 });
 
 export const resetPasswordFormSchema = z.object({
-  token: tokenSchema,
-  password: securePasswordSchema,
+  otp: otpSchema,
+  newPassword: securePasswordSchema,
 });
 
 export const verifyEmailFormSchema = z.object({

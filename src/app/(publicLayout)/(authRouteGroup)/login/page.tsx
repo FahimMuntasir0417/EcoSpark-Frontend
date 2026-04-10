@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import {
   AuthFeedback,
   AuthFormField,
+  LOGIN_NOTICE_KEY,
   authFieldSchemas,
   createZodFieldValidator,
   getApiErrorMessage,
@@ -31,6 +32,21 @@ export default function LoginPage() {
   const loginMutation = useLoginMutation();
   const router = useRouter();
   const [feedback, setFeedback] = useState<FormFeedback | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const savedNotice = window.sessionStorage.getItem(LOGIN_NOTICE_KEY)?.trim() ?? "";
+
+    if (!savedNotice) {
+      return;
+    }
+
+    setFeedback({ type: "success", text: savedNotice });
+    window.sessionStorage.removeItem(LOGIN_NOTICE_KEY);
+  }, []);
 
   const form = useForm({
     defaultValues: initialFormState,

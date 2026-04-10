@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   AuthFeedback,
   AuthFormField,
+  PASSWORD_RESET_NOTICE_KEY,
+  PASSWORD_RESET_SENT_NOTICE,
+  PENDING_PASSWORD_RESET_EMAIL_KEY,
   authFieldSchemas,
   createZodFieldValidator,
   forgotPasswordFormSchema,
@@ -23,6 +27,7 @@ const initialFormState: ForgetPasswordInput = {
 
 export default function ForgotPasswordPage() {
   const forgetPasswordMutation = useForgetPasswordMutation();
+  const router = useRouter();
   const [feedback, setFeedback] = useState<FormFeedback | null>(null);
 
   const form = useForm({
@@ -37,10 +42,15 @@ export default function ForgotPasswordPage() {
         const payload: ForgetPasswordInput = forgotPasswordFormSchema.parse(value);
         const response = await forgetPasswordMutation.mutateAsync(payload);
 
-        setFeedback({
-          type: "success",
-          text: response.message || "Password reset link sent.",
-        });
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(PENDING_PASSWORD_RESET_EMAIL_KEY, payload.email);
+          window.sessionStorage.setItem(
+            PASSWORD_RESET_NOTICE_KEY,
+            response.message || PASSWORD_RESET_SENT_NOTICE,
+          );
+        }
+
+        router.replace(`/reset-password?email=${encodeURIComponent(payload.email)}`);
       } catch (error) {
         setFeedback({ type: "error", text: getApiErrorMessage(error) });
       }
@@ -50,6 +60,9 @@ export default function ForgotPasswordPage() {
   return (
     <main className="mx-auto w-full max-w-md space-y-4 p-6">
       <h1 className="text-2xl font-semibold">Forgot Password</h1>
+      <p className="text-sm text-muted-foreground">
+        Enter your email and we will send an OTP, then move you directly to the reset step.
+      </p>
 
       <AuthFeedback feedback={feedback} />
 
@@ -90,7 +103,7 @@ export default function ForgotPasswordPage() {
         </form.Field>
 
         <Button type="submit" disabled={forgetPasswordMutation.isPending}>
-          {forgetPasswordMutation.isPending ? "Sending..." : "Send Reset Link"}
+          {forgetPasswordMutation.isPending ? "Sending..." : "Send OTP"}
         </Button>
       </form>
     </main>
