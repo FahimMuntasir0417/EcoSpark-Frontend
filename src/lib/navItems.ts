@@ -152,11 +152,6 @@ export const adminNavItems: NavSection[] = [
     title: "Community",
     items: [
       {
-        title: "Create-Idea-Report",
-        href: "/dashboard/idea-report",
-        icon: "Flag",
-      },
-      {
         title: "Idea-Report",
         href: "/admin/dashboard/al-idea-report",
         icon: "Flag",
