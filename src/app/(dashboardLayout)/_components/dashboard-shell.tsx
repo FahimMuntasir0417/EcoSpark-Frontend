@@ -1,6 +1,6 @@
 "use client";
 
-import { type LucideIcon, Archive, Bookmark, ClipboardCheck, Compass, FileText, FlaskConical, FolderPlus, Home, LayoutDashboard, Lightbulb, LogOut, Menu, MessageSquare, PlusCircle, Send, Settings, Shield, ShoppingCart, Star, ThumbsUp, User, Users, X } from "lucide-react";
+import { type LucideIcon, Archive, Bookmark, ClipboardCheck, Compass, FileText, Flag, FlaskConical, FolderPlus, Home, LayoutDashboard, Lightbulb, LogOut, Megaphone, Menu, MessageSquare, PlusCircle, Send, Settings, Shield, ShoppingCart, Star, ThumbsUp, User, Users, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
@@ -22,12 +22,14 @@ const iconMap: Record<string, LucideIcon> = {
   ClipboardCheck,
   Compass,
   FileText,
+  Flag,
   FlaskConical,
   FolderPlus,
   Home,
   LayoutDashboard,
   Lightbulb,
   MessageSquare,
+  Megaphone,
   PlusCircle,
   Send,
   Settings,

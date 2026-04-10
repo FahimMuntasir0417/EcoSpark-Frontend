@@ -44,6 +44,7 @@ export const getCommonNavItems = (role: UserRole): NavSection[] => {
         },
       ],
     },
+
     {
       title: "Settings",
       items: [
@@ -146,6 +147,28 @@ export const adminNavItems: NavSection[] = [
       },
     ],
   },
+
+  {
+    title: "Community",
+    items: [
+      {
+        title: "Create-Idea-Report",
+        href: "/dashboard/idea-report",
+        icon: "Flag",
+      },
+      {
+        title: "Idea-Report",
+        href: "/admin/dashboard/al-idea-report",
+        icon: "Flag",
+      },
+      {
+        title: "Arrange-Campaigns",
+        href: "admin/dashboard/arrange-campaigns",
+        icon: "Megaphone",
+      },
+    ],
+  },
+
   {
     title: "Analytics",
     items: [
@@ -172,6 +195,26 @@ export const memberNavItems: NavSection[] = [
         title: "Purchase Ideas",
         href: "/dashboard/purches-idea",
         icon: "ShoppingCart",
+      },
+    ],
+  },
+  {
+    title: "Community",
+    items: [
+      {
+        title: "Create-Idea-Report",
+        href: "/dashboard/idea-report",
+        icon: "Flag",
+      },
+      {
+        title: "Idea-Report",
+        href: "/dashboard/al-idea-report",
+        icon: "Flag",
+      },
+      {
+        title: "Arrange-Campaigns",
+        href: "/dashboard/arrange-campaigns",
+        icon: "Megaphone",
       },
     ],
   },
