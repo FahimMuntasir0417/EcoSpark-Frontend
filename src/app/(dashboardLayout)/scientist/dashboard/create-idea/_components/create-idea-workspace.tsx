@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useMemo, useState } from "react";
+import { type ChangeEvent, type FormEvent, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ErrorState, LoadingState } from "@/components/ui/data-state";
 import { Input } from "@/components/ui/input";
@@ -67,6 +67,8 @@ const TAGS_QUERY_PARAMS: Record<string, unknown> = { page: 1, limit: 200 };
 
 const selectClassName =
   "h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50";
+const multiSelectClassName =
+  "min-h-40 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50";
 const textareaClassName =
   "min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -179,6 +181,10 @@ function getTagLabel(tag: Tag) {
   }
 
   return tag.id;
+}
+
+function getOptionText(label: string, id: string) {
+  return label === id ? id : `${label} (${id})`;
 }
 
 type ValidationResult =
@@ -503,12 +509,9 @@ export function CreateIdeaWorkspace() {
     }
   };
 
-  const toggleTag = (tagId: string) => {
-    setSelectedTagIds((previous) =>
-      previous.includes(tagId)
-        ? previous.filter((id) => id !== tagId)
-        : [...previous, tagId],
-    );
+  const onTagSelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextTagIds = Array.from(event.target.selectedOptions, (option) => option.value);
+    setSelectedTagIds(nextTagIds);
 
     setErrors((previous) => {
       if (!previous.tagIds) {
@@ -671,7 +674,7 @@ export function CreateIdeaWorkspace() {
                   </option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
-                      {getCategoryLabel(category)}
+                      {getOptionText(getCategoryLabel(category), category.id)}
                     </option>
                   ))}
                 </select>
@@ -694,10 +697,12 @@ export function CreateIdeaWorkspace() {
                     value={form.campaignId}
                     onChange={(event) => updateField("campaignId", event.target.value)}
                   >
-                    <option value="">No campaign</option>
+                    <option value="">
+                      {campaignsQuery.isPending ? "Loading campaigns..." : "No campaign"}
+                    </option>
                     {campaigns.map((campaign) => (
                       <option key={campaign.id} value={campaign.id}>
-                        {getCampaignLabel(campaign)}
+                        {getOptionText(getCampaignLabel(campaign), campaign.id)}
                       </option>
                     ))}
                   </select>
@@ -945,7 +950,7 @@ export function CreateIdeaWorkspace() {
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label>Tags</Label>
+                <Label htmlFor="idea-tags">Tags</Label>
                 {tagsQuery.isPending ? (
                   <p className="text-sm text-muted-foreground">Loading tags...</p>
                 ) : tagsQuery.isError ? (
@@ -978,26 +983,30 @@ export function CreateIdeaWorkspace() {
                 ) : tags.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No tags found. Submit without tags or add tags from admin panel.</p>
                 ) : (
-                  <div className="grid gap-2 md:grid-cols-2">
-                    {tags.map((tag) => (
-                      <label
-                        key={tag.id}
-                        htmlFor={`tag-${tag.id}`}
-                        className="flex cursor-pointer items-start gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
-                      >
-                        <input
-                          id={`tag-${tag.id}`}
-                          type="checkbox"
-                          className="mt-0.5 size-4 rounded border-slate-300"
-                          checked={selectedTagIds.includes(tag.id)}
-                          onChange={() => toggleTag(tag.id)}
-                        />
-                        <span className="space-y-1">
-                          <span className="block font-medium">{getTagLabel(tag)}</span>
-                          <span className="block text-xs text-muted-foreground">{tag.id}</span>
-                        </span>
-                      </label>
-                    ))}
+                  <div className="space-y-2">
+                    <select
+                      id="idea-tags"
+                      multiple
+                      size={Math.min(10, Math.max(5, tags.length))}
+                      className={multiSelectClassName}
+                      value={selectedTagIds}
+                      onChange={onTagSelectChange}
+                    >
+                      {tags.map((tag) => (
+                        <option key={tag.id} value={tag.id}>
+                          {getOptionText(getTagLabel(tag), tag.id)}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      Hold Ctrl (Windows) or Cmd (Mac) to select multiple tags.
+                    </p>
+                    {selectedTagIds.length > 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        Selected {selectedTagIds.length} tag
+                        {selectedTagIds.length > 1 ? "s" : ""}.
+                      </p>
+                    ) : null}
                   </div>
                 )}
                 <FieldError message={errors.tagIds} />

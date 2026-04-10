@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   EmptyState,
@@ -52,6 +52,19 @@ type ValidationResult =
     };
 
 const ACCESS_TYPE_OPTIONS = ["FREE", "PAID"] as const;
+const IDEAS_PER_PAGE = 3;
+const IDEA_STATUS_OPTIONS = [
+  "ALL",
+  "DRAFT",
+  "UNDER_REVIEW",
+  "APPROVED",
+  "REJECTED",
+  "ARCHIVED",
+  "PUBLISHED",
+  "FEATURED",
+  "HIGHLIGHTED",
+] as const;
+type IdeaStatusFilter = (typeof IDEA_STATUS_OPTIONS)[number];
 
 const textareaClassName =
   "min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50";
@@ -94,8 +107,47 @@ function getIdeaTitle(idea: Idea) {
   return hasText(idea.title) ? idea.title!.trim() : "Untitled idea";
 }
 
+function normalizeIdeaStatus(status?: string | null) {
+  if (typeof status !== "string" || status.trim().length === 0) {
+    return "DRAFT";
+  }
+
+  return status.trim().toUpperCase().replaceAll(" ", "_");
+}
+
 function getIdeaStatus(idea: Idea) {
-  return hasText(idea.status) ? idea.status!.trim() : "draft";
+  return normalizeIdeaStatus(idea.status);
+}
+
+function formatStatusLabel(status: string) {
+  return normalizeIdeaStatus(status)
+    .toLowerCase()
+    .split("_")
+    .map((part) => (part ? `${part[0]?.toUpperCase()}${part.slice(1)}` : part))
+    .join(" ");
+}
+
+function getStatusBadgeClass(status: string) {
+  switch (normalizeIdeaStatus(status)) {
+    case "DRAFT":
+      return "border-slate-200 bg-slate-50 text-slate-700";
+    case "UNDER_REVIEW":
+      return "border-amber-200 bg-amber-50 text-amber-800";
+    case "APPROVED":
+      return "border-emerald-200 bg-emerald-50 text-emerald-800";
+    case "REJECTED":
+      return "border-rose-200 bg-rose-50 text-rose-800";
+    case "ARCHIVED":
+      return "border-zinc-300 bg-zinc-100 text-zinc-700";
+    case "PUBLISHED":
+      return "border-blue-200 bg-blue-50 text-blue-700";
+    case "FEATURED":
+      return "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700";
+    case "HIGHLIGHTED":
+      return "border-cyan-200 bg-cyan-50 text-cyan-700";
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-700";
+  }
 }
 
 function getIdeaDescription(idea: Idea) {
@@ -111,7 +163,7 @@ function getIdeaOwnerId(idea: Idea) {
 }
 
 function isDraftIdea(idea: Idea) {
-  return getIdeaStatus(idea).toLowerCase().includes("draft");
+  return getIdeaStatus(idea) === "DRAFT";
 }
 
 function getInitialEditForm(idea: Idea): IdeaEditForm {
@@ -293,9 +345,28 @@ export function MyIdeasWorkspace() {
     queryFn: () => userService.getMe(),
   });
   const userId = meQuery.data?.data?.id ?? "";
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedStatus, setSelectedStatus] = useState<IdeaStatusFilter>("ALL");
+
+  const ideaListParams = useMemo(() => {
+    const params: Record<string, unknown> = {
+      page: currentPage,
+      limit: IDEAS_PER_PAGE,
+    };
+
+    if (userId) {
+      params.authorId = userId;
+    }
+
+    if (selectedStatus !== "ALL") {
+      params.status = selectedStatus;
+    }
+
+    return params;
+  }, [currentPage, selectedStatus, userId]);
 
   const scientistQuery = useScientistByUserIdQuery(userId);
-  const ideasQuery = useIdeasQuery();
+  const ideasQuery = useIdeasQuery(ideaListParams);
   const updateIdeaMutation = useUpdateIdeaMutation();
   const deleteIdeaMutation = useDeleteIdeaMutation();
   const submitIdeaMutation = useSubmitIdeaMutation();
@@ -346,10 +417,58 @@ export function MyIdeasWorkspace() {
       }),
     [scopedIdeas],
   );
+  const totalIdeas = Number(ideasQuery.data?.meta?.total ?? sortedIdeas.length);
+  const totalPages = Math.max(
+    1,
+    Number(
+      ideasQuery.data?.meta?.totalPage ??
+        ideasQuery.data?.meta?.totalPages ??
+        (totalIdeas > 0 ? Math.ceil(totalIdeas / IDEAS_PER_PAGE) : 1),
+    ),
+  );
+  const canGoPrevious = currentPage > 1;
+  const canGoNext = currentPage < totalPages;
+  const pageStart = totalIdeas === 0 ? 0 : (currentPage - 1) * IDEAS_PER_PAGE + 1;
+  const pageEnd = Math.min(currentPage * IDEAS_PER_PAGE, totalIdeas);
+  const paginationNumbers = useMemo(() => {
+    if (totalPages <= 1) {
+      return [1];
+    }
+
+    const pages: number[] = [];
+    const start = Math.max(1, currentPage - 1);
+    const end = Math.min(totalPages, currentPage + 1);
+
+    if (start > 1) {
+      pages.push(1);
+    }
+
+    for (let page = start; page <= end; page += 1) {
+      if (!pages.includes(page)) {
+        pages.push(page);
+      }
+    }
+
+    if (end < totalPages) {
+      pages.push(totalPages);
+    }
+
+    return pages;
+  }, [currentPage, totalPages]);
 
   const scientistContextPending = Boolean(userId) && scientistQuery.isPending;
 
   const detailsIdea = detailsQuery.data?.data ?? null;
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedStatus, userId]);
 
   const startEdit = (idea: Idea) => {
     setEditingId(idea.id);
@@ -468,14 +587,15 @@ export function MyIdeasWorkspace() {
           </p>
         </div>
         <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700">
-          Total Ideas: {sortedIdeas.length}
+          Total Ideas{selectedStatus !== "ALL" ? ` (${formatStatusLabel(selectedStatus)})` : ""}:{" "}
+          {totalIdeas}
         </div>
       </div>
 
       <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-        Endpoints in use: GET `/api/v1/ideas`, GET `/api/v1/ideas/:id`, PATCH
-        `/api/v1/ideas/:id`, PATCH `/api/v1/ideas/:id/submit`, DELETE
-        `/api/v1/ideas/:id`
+        Endpoints in use: GET `/api/v1/ideas?page=1&limit=3&status=&lt;STATUS(optional)&gt;`, GET
+        `/api/v1/ideas/:id`, PATCH `/api/v1/ideas/:id`, PATCH
+        `/api/v1/ideas/:id/submit`, DELETE `/api/v1/ideas/:id`
       </p>
 
       {feedback ? (
@@ -549,7 +669,8 @@ export function MyIdeasWorkspace() {
               <span className="font-medium">Title:</span> {getIdeaTitle(detailsIdea)}
             </p>
             <p>
-              <span className="font-medium">Status:</span> {getIdeaStatus(detailsIdea)}
+              <span className="font-medium">Status:</span>{" "}
+              {formatStatusLabel(getIdeaStatus(detailsIdea))}
             </p>
             <p>
               <span className="font-medium">Slug:</span> {detailsIdea.slug}
@@ -590,12 +711,93 @@ export function MyIdeasWorkspace() {
       </section>
 
       <section>
-        <h3 className="mb-3 text-lg font-semibold">All Ideas</h3>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-lg font-semibold">All Ideas</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">Status:</span>
+            {IDEA_STATUS_OPTIONS.map((statusOption) => {
+              const isActive = selectedStatus === statusOption;
+
+              return (
+                <Button
+                  key={statusOption}
+                  type="button"
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setSelectedStatus(statusOption);
+                  }}
+                  disabled={ideasQuery.isFetching && isActive}
+                >
+                  {formatStatusLabel(statusOption)}
+                </Button>
+              );
+            })}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1">
+              Page {currentPage} of {totalPages}
+            </span>
+            <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1">
+              {IDEAS_PER_PAGE} ideas / page
+            </span>
+            <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1">
+              Showing {pageStart}-{pageEnd} of {totalIdeas}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((previous) => Math.max(1, previous - 1));
+              }}
+              disabled={!canGoPrevious || ideasQuery.isFetching}
+            >
+              Previous
+            </Button>
+            {paginationNumbers.map((pageNumber) => (
+              <Button
+                key={pageNumber}
+                type="button"
+                variant={pageNumber === currentPage ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setCurrentPage(pageNumber);
+                }}
+                disabled={ideasQuery.isFetching}
+              >
+                {pageNumber}
+              </Button>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCurrentPage((previous) => previous + 1);
+              }}
+              disabled={!canGoNext || ideasQuery.isFetching}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+
+        {ideasQuery.isFetching ? (
+          <p className="mb-3 text-xs text-muted-foreground">
+            Fetching page {currentPage}
+            {selectedStatus === "ALL" ? "" : ` for ${formatStatusLabel(selectedStatus)}`}...
+          </p>
+        ) : null}
 
         {sortedIdeas.length === 0 ? (
           <EmptyState
             title="No ideas found"
-            description="You have not created any ideas yet."
+            description={
+              selectedStatus === "ALL"
+                ? "You have not created any ideas yet."
+                : `No ${formatStatusLabel(selectedStatus)} ideas found for this page.`
+            }
           />
         ) : (
           <ul className="space-y-3">
@@ -766,8 +968,10 @@ export function MyIdeasWorkspace() {
                             ID: {idea.id}
                           </p>
                         </div>
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-                          {getIdeaStatus(idea)}
+                        <span
+                          className={`rounded-full border px-3 py-1 text-xs font-medium ${getStatusBadgeClass(getIdeaStatus(idea))}`}
+                        >
+                          {formatStatusLabel(getIdeaStatus(idea))}
                         </span>
                       </div>
 

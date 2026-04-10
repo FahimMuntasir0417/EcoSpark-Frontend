@@ -72,6 +72,11 @@ export const scientistNavItems: NavSection[] = [
         icon: "PlusCircle",
       },
       {
+        title: "Idea Attachments",
+        href: "/scientist/dashboard/idea-attachments",
+        icon: "Paperclip",
+      },
+      {
         title: "Draft Ideas",
         href: "/scientist/dashboard/draft-ideas",
         icon: "FileText",
@@ -190,4 +195,3 @@ export const getNavItemsByRole = (role: UserRole): NavSection[] => {
       return commonNavItems;
   }
 };
-
