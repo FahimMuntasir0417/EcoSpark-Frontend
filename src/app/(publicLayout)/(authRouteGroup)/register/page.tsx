@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,6 +28,7 @@ const PENDING_VERIFY_EMAIL_KEY = "eco_spark_pending_verify_email";
 
 export default function RegisterPage() {
   const registerMutation = useRegisterMutation();
+  const router = useRouter();
   const [feedback, setFeedback] = useState<FormFeedback | null>(null);
 
   const form = useForm({
@@ -39,17 +41,13 @@ export default function RegisterPage() {
 
       try {
         const payload: RegisterInput = registerFormSchema.parse(value);
-        const response = await registerMutation.mutateAsync(payload);
+        await registerMutation.mutateAsync(payload);
 
         if (typeof window !== "undefined") {
           window.localStorage.setItem(PENDING_VERIFY_EMAIL_KEY, payload.email);
         }
 
-        form.reset();
-        setFeedback({
-          type: "success",
-          text: response.message || "Registration successful.",
-        });
+        router.replace(`/verify-email?email=${encodeURIComponent(payload.email)}`);
       } catch (error) {
         setFeedback({ type: "error", text: getApiErrorMessage(error) });
       }
