@@ -25,6 +25,14 @@ export type {
   UpdateCampaignStatusInput,
 };
 
+export type CreateCampaignPayload = CreateCampaignInput & {
+  bannerImageFile?: File | null;
+};
+
+export type UpdateCampaignPayload = UpdateCampaignInput & {
+  bannerImageFile?: File | null;
+};
+
 type CampaignQueryOptions = {
   params?: Record<string, unknown>;
   signal?: AbortSignal;
@@ -33,10 +41,36 @@ type CampaignQueryOptions = {
 const campaignListSchema = z.array(campaignSchema);
 const campaignIdeaListSchema = z.array(campaignIdeaSchema);
 
+function hasCampaignBannerFile(
+  payload: CreateCampaignPayload | UpdateCampaignPayload,
+): payload is (CreateCampaignPayload | UpdateCampaignPayload) & {
+  bannerImageFile: File;
+} {
+  return typeof File !== "undefined" && payload.bannerImageFile instanceof File;
+}
+
+function buildCampaignMultipartPayload(
+  payload: CreateCampaignPayload | UpdateCampaignPayload,
+  schema: typeof createCampaignInputSchema | typeof updateCampaignInputSchema,
+) {
+  if (typeof FormData === "undefined") {
+    throw new Error("Campaign file uploads are not supported in this environment.");
+  }
+
+  const { bannerImageFile, bannerImage: _bannerImage, ...rest } = payload;
+  const parsedPayload = parseApiPayload(rest, schema);
+  const formData = new FormData();
+  formData.append("bannerImage", bannerImageFile);
+  formData.append("data", JSON.stringify(parsedPayload));
+  return formData;
+}
+
 export const campaignService = {
-  async createCampaign(payload: CreateCampaignInput) {
-    const parsedPayload = parseApiPayload(payload, createCampaignInputSchema);
-    const response = await httpClient.post<unknown>("/campaigns", parsedPayload);
+  async createCampaign(payload: CreateCampaignPayload) {
+    const requestBody = hasCampaignBannerFile(payload)
+      ? buildCampaignMultipartPayload(payload, createCampaignInputSchema)
+      : parseApiPayload(payload, createCampaignInputSchema);
+    const response = await httpClient.post<unknown>("/campaigns", requestBody);
     return parseApiData(response, campaignSchema);
   },
 
@@ -64,11 +98,13 @@ export const campaignService = {
     return parseApiData(response, campaignSchema);
   },
 
-  async updateCampaign(id: string, payload: UpdateCampaignInput) {
-    const parsedPayload = parseApiPayload(payload, updateCampaignInputSchema);
+  async updateCampaign(id: string, payload: UpdateCampaignPayload) {
+    const requestBody = hasCampaignBannerFile(payload)
+      ? buildCampaignMultipartPayload(payload, updateCampaignInputSchema)
+      : parseApiPayload(payload, updateCampaignInputSchema);
     const response = await httpClient.patch<unknown>(
       `/campaigns/${encodeURIComponent(id)}`,
-      parsedPayload,
+      requestBody,
     );
     return parseApiData(response, campaignSchema);
   },

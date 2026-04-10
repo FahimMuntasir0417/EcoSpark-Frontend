@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   campaignService,
-  type CreateCampaignInput,
-  type UpdateCampaignInput,
+  type CreateCampaignPayload,
+  type UpdateCampaignPayload,
   type UpdateCampaignStatusInput,
 } from "@/services/campaign.service";
 import { campaignQueryKeys } from "./use-campaigns-query";
@@ -13,7 +13,7 @@ type CampaignIdVariables = {
 
 type UpdateCampaignVariables = {
   id: string;
-  payload: UpdateCampaignInput;
+  payload: UpdateCampaignPayload;
 };
 
 type UpdateCampaignStatusVariables = {
@@ -41,7 +41,7 @@ export function useCreateCampaignMutation() {
   const invalidate = useCampaignInvalidator();
 
   return useMutation({
-    mutationFn: (payload: CreateCampaignInput) => campaignService.createCampaign(payload),
+    mutationFn: (payload: CreateCampaignPayload) => campaignService.createCampaign(payload),
     onSuccess: async () => {
       await invalidate();
     },
