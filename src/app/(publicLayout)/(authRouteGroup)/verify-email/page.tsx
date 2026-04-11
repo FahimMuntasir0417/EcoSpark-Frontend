@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";
@@ -29,19 +29,64 @@ const initialFormState: VerifyFormValues = {
   otp: "",
 };
 
+function subscribeToStorageValue() {
+  return () => {};
+}
+
+function getSessionStorageValue(key: string) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const value = window.sessionStorage.getItem(key)?.trim() ?? "";
+  return value || null;
+}
+
+function getLocalStorageValue(key: string) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const value = window.localStorage.getItem(key)?.trim() ?? "";
+  return value || null;
+}
+
 export default function VerifyEmailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const verifyEmailMutation = useVerifyEmailMutation();
   const [feedback, setFeedback] = useState<FormFeedback | null>(null);
-  const [resolvedEmail, setResolvedEmail] = useState("");
+  const [hasDismissedSavedNotice, setHasDismissedSavedNotice] = useState(false);
+  const emailFromQuery = searchParams.get("email")?.trim() ?? "";
+  const otpFromQuery = searchParams.get("otp") ?? searchParams.get("token") ?? "";
+
+  const savedEmail = useSyncExternalStore(
+    subscribeToStorageValue,
+    () => getLocalStorageValue(PENDING_VERIFY_EMAIL_KEY),
+    () => null,
+  );
+  const savedNotice = useSyncExternalStore(
+    subscribeToStorageValue,
+    () => getSessionStorageValue(VERIFY_EMAIL_NOTICE_KEY),
+    () => null,
+  );
+  const resolvedEmail = emailFromQuery || savedEmail || "";
+  const resolvedFeedback =
+    feedback ??
+    (!hasDismissedSavedNotice && savedNotice
+      ? { type: "error" as const, text: savedNotice }
+      : null);
 
   const form = useForm({
-    defaultValues: initialFormState,
+    defaultValues: {
+      ...initialFormState,
+      otp: otpFromQuery ?? "",
+    },
     validators: {
       onSubmit: verifyEmailFormSchema,
     },
     onSubmit: async ({ value }) => {
+      setHasDismissedSavedNotice(true);
       setFeedback(null);
 
       try {
@@ -81,53 +126,29 @@ export default function VerifyEmailPage() {
   });
 
   useEffect(() => {
-    const emailFromQuery = searchParams.get("email")?.trim() ?? "";
-    const otpFromQuery = searchParams.get("otp") ?? searchParams.get("token");
-    const verifyNotice =
-      typeof window !== "undefined"
-        ? window.sessionStorage.getItem(VERIFY_EMAIL_NOTICE_KEY)?.trim() ?? ""
-        : "";
-
-    if (verifyNotice) {
-      setFeedback({ type: "error", text: verifyNotice });
-      if (typeof window !== "undefined") {
-        window.sessionStorage.removeItem(VERIFY_EMAIL_NOTICE_KEY);
-      }
+    if (typeof window === "undefined") {
+      return;
     }
 
     if (emailFromQuery) {
-      setResolvedEmail(emailFromQuery);
-
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(PENDING_VERIFY_EMAIL_KEY, emailFromQuery);
-      }
-    } else if (typeof window !== "undefined") {
-      const savedEmail =
-        window.localStorage.getItem(PENDING_VERIFY_EMAIL_KEY)?.trim() ?? "";
-      if (savedEmail) {
-        setResolvedEmail(savedEmail);
-      }
+      window.localStorage.setItem(PENDING_VERIFY_EMAIL_KEY, emailFromQuery);
     }
 
-    if (otpFromQuery && otpFromQuery !== form.state.values.otp) {
-      form.setFieldValue("otp", otpFromQuery);
+    if (savedNotice) {
+      window.sessionStorage.removeItem(VERIFY_EMAIL_NOTICE_KEY);
     }
-  }, [form, searchParams]);
+  }, [emailFromQuery, savedNotice]);
 
-  const emailHint = useMemo(() => {
-    if (!resolvedEmail) {
-      return "No email context found yet.";
-    }
-
-    return `Using email: ${resolvedEmail}`;
-  }, [resolvedEmail]);
+  const emailHint = resolvedEmail
+    ? `Using email: ${resolvedEmail}`
+    : "No email context found yet.";
 
   return (
     <main className="mx-auto w-full max-w-md space-y-4 p-6">
       <h1 className="text-2xl font-semibold">Verify Email</h1>
       <p className="text-sm text-muted-foreground">{emailHint}</p>
 
-      <AuthFeedback feedback={feedback} />
+      <AuthFeedback feedback={resolvedFeedback} />
 
       <form
         className="grid gap-3"

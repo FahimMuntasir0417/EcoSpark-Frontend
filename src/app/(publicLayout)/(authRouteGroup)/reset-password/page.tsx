@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
@@ -30,15 +30,58 @@ const initialFormState: ResetPasswordFormValues = {
   newPassword: "",
 };
 
+function subscribeToStorageValue() {
+  return () => {};
+}
+
+function getSessionStorageValue(key: string) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const value = window.sessionStorage.getItem(key)?.trim() ?? "";
+  return value || null;
+}
+
+function getLocalStorageValue(key: string) {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const value = window.localStorage.getItem(key)?.trim() ?? "";
+  return value || null;
+}
+
 export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const resetPasswordMutation = useResetPasswordMutation();
   const [feedback, setFeedback] = useState<FormFeedback | null>(null);
-  const [resolvedEmail, setResolvedEmail] = useState("");
+  const emailFromQuery = searchParams.get("email")?.trim() ?? "";
+  const otpFromQuery = searchParams.get("otp") ?? searchParams.get("token") ?? "";
+
+  const savedEmail = useSyncExternalStore(
+    subscribeToStorageValue,
+    () => getLocalStorageValue(PENDING_PASSWORD_RESET_EMAIL_KEY),
+    () => null,
+  );
+  const savedNotice = useSyncExternalStore(
+    subscribeToStorageValue,
+    () => getSessionStorageValue(PASSWORD_RESET_NOTICE_KEY),
+    () => null,
+  );
+  const resolvedEmail = emailFromQuery || savedEmail || "";
+  const resolvedFeedback =
+    feedback ??
+    (savedNotice
+      ? { type: "success" as const, text: savedNotice }
+      : null);
 
   const form = useForm({
-    defaultValues: initialFormState,
+    defaultValues: {
+      ...initialFormState,
+      otp: otpFromQuery ?? "",
+    },
     validators: {
       onSubmit: resetPasswordFormSchema,
     },
@@ -84,38 +127,18 @@ export default function ResetPasswordPage() {
   });
 
   useEffect(() => {
-    const emailFromQuery = searchParams.get("email")?.trim() ?? "";
-    const otpFromQuery = searchParams.get("otp") ?? searchParams.get("token");
+    if (typeof window === "undefined") {
+      return;
+    }
 
     if (emailFromQuery) {
-      setResolvedEmail(emailFromQuery);
-
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(PENDING_PASSWORD_RESET_EMAIL_KEY, emailFromQuery);
-      }
-    } else if (typeof window !== "undefined") {
-      const savedEmail =
-        window.localStorage.getItem(PENDING_PASSWORD_RESET_EMAIL_KEY)?.trim() ?? "";
-
-      if (savedEmail) {
-        setResolvedEmail(savedEmail);
-      }
+      window.localStorage.setItem(PENDING_PASSWORD_RESET_EMAIL_KEY, emailFromQuery);
     }
 
-    if (otpFromQuery && otpFromQuery !== form.state.values.otp) {
-      form.setFieldValue("otp", otpFromQuery);
+    if (savedNotice) {
+      window.sessionStorage.removeItem(PASSWORD_RESET_NOTICE_KEY);
     }
-
-    if (typeof window !== "undefined") {
-      const savedNotice =
-        window.sessionStorage.getItem(PASSWORD_RESET_NOTICE_KEY)?.trim() ?? "";
-
-      if (savedNotice) {
-        setFeedback({ type: "success", text: savedNotice });
-        window.sessionStorage.removeItem(PASSWORD_RESET_NOTICE_KEY);
-      }
-    }
-  }, [form, searchParams]);
+  }, [emailFromQuery, savedNotice]);
 
   const emailHint = resolvedEmail
     ? `Resetting password for: ${resolvedEmail}`
@@ -126,7 +149,7 @@ export default function ResetPasswordPage() {
       <h1 className="text-2xl font-semibold">Reset Password</h1>
       <p className="text-sm text-muted-foreground">{emailHint}</p>
 
-      <AuthFeedback feedback={feedback} />
+      <AuthFeedback feedback={resolvedFeedback} />
 
       <form
         className="grid gap-3"
