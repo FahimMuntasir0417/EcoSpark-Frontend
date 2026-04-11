@@ -174,7 +174,15 @@ export default function LoginPage() {
   const loginMutation = useLoginMutation();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [feedback, setFeedback] = useState<FormFeedback | null>(null);
+  const [feedback, setFeedback] = useState<FormFeedback | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    const savedNotice = window.sessionStorage.getItem(LOGIN_NOTICE_KEY)?.trim() ?? "";
+
+    return savedNotice ? { type: "success", text: savedNotice } : null;
+  });
   const [verificationEmail, setVerificationEmail] = useState("");
 
   const requestedRedirect = sanitizeLoginRedirectPath(
@@ -186,13 +194,6 @@ export default function LoginPage() {
       return;
     }
 
-    const savedNotice = window.sessionStorage.getItem(LOGIN_NOTICE_KEY)?.trim() ?? "";
-
-    if (!savedNotice) {
-      return;
-    }
-
-    setFeedback({ type: "success", text: savedNotice });
     window.sessionStorage.removeItem(LOGIN_NOTICE_KEY);
   }, []);
 
