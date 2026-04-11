@@ -190,6 +190,10 @@ function isUrlFieldKey(key: string) {
   return /(?:Url|Image)$/i.test(key);
 }
 
+function isHiddenFieldKey(key: string) {
+  return key === "id" || key.endsWith("Id") || key === "createdAt";
+}
+
 function getObjectRecord(value: unknown): FieldRecord | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as FieldRecord)
@@ -239,6 +243,63 @@ function getRecordArray(value: unknown) {
   );
 }
 
+function isImageUrl(
+  key: string,
+  value: string,
+  record?: FieldRecord,
+) {
+  const mimeType =
+    typeof record?.mimeType === "string" ? record.mimeType : "";
+  const fileType =
+    typeof record?.fileType === "string" ? record.fileType : "";
+  const mediaType = typeof record?.type === "string" ? record.type : "";
+
+  return (
+    /image/i.test(key) ||
+    /image/i.test(mimeType) ||
+    /image/i.test(fileType) ||
+    mediaType === "IMAGE" ||
+    /\.(png|jpe?g|gif|webp|avif|svg)(?:[?#].*)?$/i.test(value)
+  );
+}
+
+function isVideoUrl(
+  key: string,
+  value: string,
+  record?: FieldRecord,
+) {
+  const mimeType =
+    typeof record?.mimeType === "string" ? record.mimeType : "";
+  const fileType =
+    typeof record?.fileType === "string" ? record.fileType : "";
+  const mediaType = typeof record?.type === "string" ? record.type : "";
+
+  return (
+    /video/i.test(key) ||
+    /video/i.test(mimeType) ||
+    /video/i.test(fileType) ||
+    mediaType === "VIDEO" ||
+    /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i.test(value)
+  );
+}
+
+function getUrlLabel(key: string, record?: FieldRecord) {
+  const candidates = [
+    record?.title,
+    record?.fileName,
+    record?.caption,
+    record?.altText,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate;
+    }
+  }
+
+  return formatFieldLabel(key);
+}
+
 function renderFieldValue(
   key: string,
   value: unknown,
@@ -278,15 +339,60 @@ function renderFieldValue(
     }
 
     if (isUrlFieldKey(key) && hasText(value)) {
+      const label = getUrlLabel(key, record);
+
+      if (isImageUrl(key, value, record)) {
+        return (
+          <div className="space-y-3">
+            <img
+              src={value}
+              alt={label}
+              className="h-48 w-full rounded-2xl border border-slate-200 object-cover"
+            />
+            <a
+              href={value}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
+            >
+              Open image
+            </a>
+          </div>
+        );
+      }
+
+      if (isVideoUrl(key, value, record)) {
+        return (
+          <div className="space-y-3">
+            <video
+              controls
+              src={value}
+              className="h-48 w-full rounded-2xl border border-slate-200 bg-black object-cover"
+            />
+            <a
+              href={value}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
+            >
+              Open video
+            </a>
+          </div>
+        );
+      }
+
       return (
-        <a
-          href={value}
-          target="_blank"
-          rel="noreferrer"
-          className="break-all text-sky-700 underline decoration-sky-200 underline-offset-4"
-        >
-          {value}
-        </a>
+        <div className="space-y-3">
+          <a
+            href={value}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
+          >
+            Open file
+          </a>
+          <p className="break-all text-sm text-slate-600">{value}</p>
+        </div>
       );
     }
 
@@ -585,7 +691,6 @@ function FieldCard({
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
         {formatFieldLabel(fieldKey)}
       </p>
-      <p className="mt-1 font-mono text-[11px] text-slate-400">{fieldKey}</p>
       <div className="mt-3 break-words whitespace-pre-wrap text-sm leading-7 text-slate-700">
         {renderFieldValue(fieldKey, value, record)}
       </div>
@@ -606,7 +711,10 @@ function FieldGrid({
 }) {
   const hiddenKeySet = new Set(hiddenKeys);
   const entries = Object.entries(record).filter(
-    ([key, value]) => !hiddenKeySet.has(key) && isDisplayableFieldValue(value),
+    ([key, value]) =>
+      !hiddenKeySet.has(key) &&
+      !isHiddenFieldKey(key) &&
+      isDisplayableFieldValue(value),
   );
 
   if (entries.length === 0) {
@@ -643,7 +751,10 @@ function RecordCollectionSection({
   const visibleItems = items
     .map((item) => ({
       item,
-      entries: Object.entries(item).filter(([, value]) => isDisplayableFieldValue(value)),
+      entries: Object.entries(item).filter(
+        ([key, value]) =>
+          !isHiddenFieldKey(key) && isDisplayableFieldValue(value),
+      ),
     }))
     .filter(({ entries }) => entries.length > 0);
 
@@ -669,9 +780,6 @@ function RecordCollectionSection({
                 <p className="text-lg font-semibold text-slate-950">
                   {itemLabel} {index + 1}
                 </p>
-                {typeof item.id === "string" && item.id ? (
-                  <Badge>{item.id}</Badge>
-                ) : null}
               </div>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
