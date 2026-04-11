@@ -79,12 +79,15 @@ function formatDate(value?: string | null) {
   });
 }
 
-function formatMetric(value: number | null | undefined, suffix = "") {
-  if (typeof value !== "number" || Number.isNaN(value)) {
+function formatMetric(value: number | string | null | undefined, suffix = "") {
+  const numericValue =
+    typeof value === "string" ? Number.parseFloat(value) : value;
+
+  if (typeof numericValue !== "number" || !Number.isFinite(numericValue)) {
     return "N/A";
   }
 
-  return `${value.toLocaleString()}${suffix}`;
+  return `${numericValue.toLocaleString()}${suffix}`;
 }
 
 function formatCurrencyValue(amount: number, currency?: string | null) {
