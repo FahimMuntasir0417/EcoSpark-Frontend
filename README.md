@@ -24,6 +24,29 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api/v1
 
 Reference file: [`.env.example`](.env.example)
 
+## Deploy To Vercel
+
+This app is deployable on Vercel as a standard Next.js project.
+
+Required project settings:
+
+- Node.js version: `20.x`
+- Framework preset: `Next.js`
+- Build command: `npm run build`
+
+Required environment variables:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=https://YOUR_BACKEND_HOST/api/v1
+```
+
+Deployment notes:
+
+- Set `NEXT_PUBLIC_API_BASE_URL` in both Preview and Production environments.
+- The value must include the `/api/v1` suffix because the frontend rewrites `/api/v1/*` to that backend origin.
+- This app uses credentialed requests and auth cookies, so your backend must allow your Vercel domain in its CORS and cookie settings.
+- After changing environment variables in Vercel, create a new deployment so the Next.js build picks up the updated `NEXT_PUBLIC_*` value.
+
 ## Scripts
 
 ```bash

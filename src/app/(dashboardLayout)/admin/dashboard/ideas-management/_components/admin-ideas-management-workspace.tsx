@@ -272,7 +272,7 @@ function Badge({
   children,
   tone = "neutral",
 }: Readonly<{
-  children: string;
+  children: ReactNode;
   tone?: "neutral" | "success" | "warning" | "accent";
 }>) {
   return (

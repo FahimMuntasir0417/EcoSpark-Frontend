@@ -50,7 +50,9 @@ function hasCampaignBannerFile(
 }
 
 function buildCampaignMultipartPayload(
-  payload: CreateCampaignPayload | UpdateCampaignPayload,
+  payload: (CreateCampaignPayload | UpdateCampaignPayload) & {
+    bannerImageFile: File;
+  },
   schema: typeof createCampaignInputSchema | typeof updateCampaignInputSchema,
 ) {
   if (typeof FormData === "undefined") {

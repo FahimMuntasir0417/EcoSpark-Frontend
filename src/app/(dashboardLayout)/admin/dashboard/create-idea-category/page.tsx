@@ -3,7 +3,6 @@
 import {
   type FormEvent,
   useDeferredValue,
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -268,35 +267,28 @@ export default function CreateIdeaCategoryPage() {
     1,
     Math.ceil(filteredCategories.length / CATEGORIES_PER_PAGE),
   );
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [deferredSearchQuery]);
-
-  useEffect(() => {
-    setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
-  }, [totalPages]);
+  const effectiveCurrentPage = Math.min(currentPage, totalPages);
 
   const currentPageCategories = useMemo(() => {
-    const startIndex = (currentPage - 1) * CATEGORIES_PER_PAGE;
+    const startIndex = (effectiveCurrentPage - 1) * CATEGORIES_PER_PAGE;
 
     return filteredCategories.slice(
       startIndex,
       startIndex + CATEGORIES_PER_PAGE,
     );
-  }, [currentPage, filteredCategories]);
+  }, [effectiveCurrentPage, filteredCategories]);
 
   const paginationItems = useMemo(
-    () => getPaginationItems(totalPages, currentPage),
-    [currentPage, totalPages],
+    () => getPaginationItems(totalPages, effectiveCurrentPage),
+    [effectiveCurrentPage, totalPages],
   );
 
   const visibleFrom =
     filteredCategories.length === 0
       ? 0
-      : (currentPage - 1) * CATEGORIES_PER_PAGE + 1;
+      : (effectiveCurrentPage - 1) * CATEGORIES_PER_PAGE + 1;
   const visibleTo = Math.min(
-    currentPage * CATEGORIES_PER_PAGE,
+    effectiveCurrentPage * CATEGORIES_PER_PAGE,
     filteredCategories.length,
   );
 
@@ -659,7 +651,7 @@ export default function CreateIdeaCategoryPage() {
                 Page Status
               </p>
               <p className="mt-2 text-sm font-medium text-slate-800">
-                Page {currentPage.toLocaleString()} of{" "}
+                Page {effectiveCurrentPage.toLocaleString()} of{" "}
                 {totalPages.toLocaleString()}
               </p>
               <p className="text-xs text-slate-500">3 categories per page</p>
@@ -671,7 +663,10 @@ export default function CreateIdeaCategoryPage() {
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               <Input
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value);
+                  setCurrentPage(1);
+                }}
                 placeholder="Search by name, slug, or description"
                 className="h-12 rounded-2xl border-slate-200 bg-white pl-11 shadow-sm"
               />
@@ -687,7 +682,10 @@ export default function CreateIdeaCategoryPage() {
                   type="button"
                   variant="ghost"
                   className="rounded-full px-4"
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCurrentPage(1);
+                  }}
                 >
                   Clear search
                 </Button>
@@ -962,17 +960,17 @@ export default function CreateIdeaCategoryPage() {
                           <PaginationPrevious
                             href="#"
                             className={cn(
-                              currentPage <= 1 &&
+                              effectiveCurrentPage <= 1 &&
                                 "pointer-events-none opacity-50",
                             )}
                             onClick={(event) => {
                               event.preventDefault();
 
-                              if (currentPage <= 1) {
+                              if (effectiveCurrentPage <= 1) {
                                 return;
                               }
 
-                              setCurrentPage(currentPage - 1);
+                              setCurrentPage(effectiveCurrentPage - 1);
                             }}
                           />
                         </PaginationItem>
@@ -990,9 +988,9 @@ export default function CreateIdeaCategoryPage() {
                             <PaginationItem key={`page-${item}`}>
                               <PaginationLink
                                 href="#"
-                                isActive={item === currentPage}
+                                isActive={item === effectiveCurrentPage}
                                 className={cn(
-                                  item === currentPage &&
+                                  item === effectiveCurrentPage &&
                                     "pointer-events-none",
                                 )}
                                 onClick={(event) => {
@@ -1010,17 +1008,17 @@ export default function CreateIdeaCategoryPage() {
                           <PaginationNext
                             href="#"
                             className={cn(
-                              currentPage >= totalPages &&
+                              effectiveCurrentPage >= totalPages &&
                                 "pointer-events-none opacity-50",
                             )}
                             onClick={(event) => {
                               event.preventDefault();
 
-                              if (currentPage >= totalPages) {
+                              if (effectiveCurrentPage >= totalPages) {
                                 return;
                               }
 
-                              setCurrentPage(currentPage + 1);
+                              setCurrentPage(effectiveCurrentPage + 1);
                             }}
                           />
                         </PaginationItem>
@@ -1028,7 +1026,7 @@ export default function CreateIdeaCategoryPage() {
                     </Pagination>
 
                     <p className="mt-3 text-center text-sm text-slate-500">
-                      Page {currentPage.toLocaleString()} of{" "}
+                      Page {effectiveCurrentPage.toLocaleString()} of{" "}
                       {totalPages.toLocaleString()}. Three categories are shown
                       per page.
                     </p>

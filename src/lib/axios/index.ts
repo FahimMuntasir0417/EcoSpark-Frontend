@@ -90,7 +90,7 @@ async function requestTokenRefresh(): Promise<string | null> {
 
     persistAuthSession({
       accessToken: authPayload.accessToken,
-      refreshToken: authPayload.refreshToken ?? refreshToken,
+      refreshToken: authPayload.refreshToken ?? refreshToken ?? undefined,
       role: authPayload.role,
     });
 

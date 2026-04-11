@@ -147,15 +147,14 @@ function extractAttachments(idea: Idea | null): AttachmentItem[] {
   const raw = (idea as { attachments?: unknown }).attachments;
   if (!Array.isArray(raw)) return [];
 
-  return raw
-    .map((entry) => {
+  return raw.reduce<AttachmentItem[]>((items, entry) => {
       const record = toRecord(entry);
-      if (!record) return null;
+      if (!record) return items;
 
       const id = toStringValue(record.id);
-      if (!id) return null;
+      if (!id) return items;
 
-      return {
+      items.push({
         id,
         title: toStringValue(record.title),
         fileUrl: toStringValue(record.fileUrl),
@@ -163,9 +162,10 @@ function extractAttachments(idea: Idea | null): AttachmentItem[] {
         fileType: toStringValue(record.fileType),
         fileSizeBytes: toNumberValue(record.fileSizeBytes),
         createdAt: toStringValue(record.createdAt),
-      };
-    })
-    .filter((item): item is AttachmentItem => Boolean(item));
+      });
+
+      return items;
+    }, []);
 }
 
 function extractMedia(idea: Idea | null): MediaItem[] {
@@ -174,16 +174,15 @@ function extractMedia(idea: Idea | null): MediaItem[] {
   const raw = (idea as { media?: unknown }).media;
   if (!Array.isArray(raw)) return [];
 
-  return raw
-    .map((entry) => {
+  return raw.reduce<MediaItem[]>((items, entry) => {
       const record = toRecord(entry);
-      if (!record) return null;
+      if (!record) return items;
 
       const id = toStringValue(record.id);
       const url = toStringValue(record.url);
-      if (!id || !url) return null;
+      if (!id || !url) return items;
 
-      return {
+      items.push({
         id,
         url,
         type: toStringValue(record.type),
@@ -192,9 +191,10 @@ function extractMedia(idea: Idea | null): MediaItem[] {
         sortOrder: toNumberValue(record.sortOrder),
         isPrimary: toBooleanValue(record.isPrimary),
         createdAt: toStringValue(record.createdAt),
-      };
-    })
-    .filter((item): item is MediaItem => Boolean(item));
+      });
+
+      return items;
+    }, []);
 }
 
 export default function IdeaAttachmentPage() {

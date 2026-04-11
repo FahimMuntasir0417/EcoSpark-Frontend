@@ -24,7 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useDeferredValue, useEffect, useState, type FormEvent } from "react";
+import { useDeferredValue, useState, type FormEvent } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
 import { Input } from "@/components/ui/input";
@@ -597,12 +597,6 @@ export default function ArrangeCampaignsPage() {
       : statusFilter === "inactive"
         ? "Showing campaigns currently marked as inactive."
         : "Showing every campaign record available to this member workspace.";
-
-  useEffect(() => {
-    if (!campaignsQuery.isFetching && page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [campaignsQuery.isFetching, page, totalPages]);
 
   if (campaignsQuery.isPending && !campaignsQuery.data) {
     return (
