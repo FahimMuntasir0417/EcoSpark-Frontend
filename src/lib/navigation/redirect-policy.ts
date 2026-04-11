@@ -11,6 +11,21 @@ export const APP_ROUTES = {
   register: "/register",
 } as const;
 
+const GENERIC_PROTECTED_ROUTES = [
+  "/dashboard",
+  "/my-profile",
+  "/change-password",
+  "/my-vote",
+  "/my-comment",
+  "/saved-ideas",
+  "/my-purchases",
+  "/purches-idea",
+] as const;
+
+function matchesRoutePrefix(pathname: string, route: string): boolean {
+  return pathname === route || pathname.startsWith(`${route}/`);
+}
+
 export function sanitizeInternalPath(
   path: string | null | undefined,
 ): string | null {
@@ -64,11 +79,8 @@ export function isScientistDashboardPath(pathname: string): boolean {
 }
 
 export function isGenericProtectedPath(pathname: string): boolean {
-  return (
-    pathname === "/dashboard" ||
-    pathname.startsWith("/dashboard/") ||
-    pathname.startsWith("/my-profile") ||
-    pathname.startsWith("/change-password")
+  return GENERIC_PROTECTED_ROUTES.some((route) =>
+    matchesRoutePrefix(pathname, route),
   );
 }
 

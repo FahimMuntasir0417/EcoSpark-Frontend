@@ -52,7 +52,7 @@ const memberLinks: ShortcutLink[] = [
   {
     title: "Purchase Ideas",
     description: "Track purchases, pending orders, and access history.",
-    href: "/dashboard/purches-idea",
+    href: "/my-purchases",
     icon: ShoppingCart,
     tone: "amber",
   },

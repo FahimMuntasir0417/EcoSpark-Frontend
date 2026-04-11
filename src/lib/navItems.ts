@@ -193,7 +193,7 @@ export const memberNavItems: NavSection[] = [
 
       {
         title: "Purchase Ideas",
-        href: "/dashboard/purches-idea",
+        href: "/my-purchases",
         icon: "ShoppingCart",
       },
     ],

@@ -81,5 +81,10 @@ export const config = {
     "/dashboard/:path*",
     "/my-profile/:path*",
     "/change-password/:path*",
+    "/my-vote/:path*",
+    "/my-comment/:path*",
+    "/saved-ideas/:path*",
+    "/my-purchases/:path*",
+    "/purches-idea/:path*",
   ],
 };

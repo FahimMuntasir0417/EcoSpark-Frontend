@@ -4,7 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+} from "@/components/ui/data-state";
 import { getApiErrorMessage } from "@/lib/errors/api-error";
 import { commerceService } from "@/services/commerce.service";
 
@@ -51,7 +55,8 @@ export default function PaymentSuccessPage() {
 
   const purchaseQuery = useQuery({
     queryKey: ["commerce", "payment-status", purchaseId],
-    queryFn: ({ signal }) => commerceService.getSinglePurchase(purchaseId, { signal }),
+    queryFn: ({ signal }) =>
+      commerceService.getSinglePurchase(purchaseId, { signal }),
     enabled: Boolean(purchaseId),
     retry: false,
     refetchInterval: (query) => {
@@ -114,7 +119,8 @@ export default function PaymentSuccessPage() {
     );
   }
 
-  const status = typeof purchase.status === "string" ? purchase.status : "UNKNOWN";
+  const status =
+    typeof purchase.status === "string" ? purchase.status : "UNKNOWN";
   const ideaId =
     purchase.idea && typeof purchase.idea.id === "string"
       ? purchase.idea.id
@@ -129,39 +135,61 @@ export default function PaymentSuccessPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
             Stripe payment status
           </p>
-          <h1 className="text-3xl font-semibold text-slate-950">Payment verification</h1>
+          <h1 className="text-3xl font-semibold text-slate-950">
+            Payment verification
+          </h1>
           <p className="text-sm leading-7 text-slate-600">
-            This page confirms the final purchase state from the backend after Stripe redirects back to the frontend.
+            This page confirms the final purchase state from the backend after
+            Stripe redirects back to the frontend.
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Purchase ID</p>
-            <p className="mt-2 break-all text-sm font-medium text-slate-950">{purchase.id}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Purchase ID
+            </p>
+            <p className="mt-2 break-all text-sm font-medium text-slate-950">
+              {purchase.id}
+            </p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Status</p>
-            <p className="mt-2 text-lg font-semibold text-slate-950">{formatLabel(status)}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Status
+            </p>
+            <p className="mt-2 text-lg font-semibold text-slate-950">
+              {formatLabel(status)}
+            </p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Idea</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Idea
+            </p>
             <p className="mt-2 text-sm font-medium text-slate-950">
-              {typeof purchase.idea?.title === "string" && purchase.idea.title.trim()
+              {typeof purchase.idea?.title === "string" &&
+              purchase.idea.title.trim()
                 ? purchase.idea.title
                 : ideaId || "Unavailable"}
             </p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Paid at</p>
-            <p className="mt-2 text-sm font-medium text-slate-950">{formatDate(purchase.paidAt ?? null)}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Paid at
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-950">
+              {formatDate(purchase.paidAt ?? null)}
+            </p>
           </div>
         </div>
 
         {sessionId ? (
           <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Stripe session</p>
-            <p className="mt-2 break-all text-sm font-medium text-slate-950">{sessionId}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Stripe session
+            </p>
+            <p className="mt-2 break-all text-sm font-medium text-slate-950">
+              {sessionId}
+            </p>
           </div>
         ) : null}
 
@@ -173,13 +201,15 @@ export default function PaymentSuccessPage() {
 
         {status === "PENDING" ? (
           <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Payment is still pending. This page will keep polling the backend while the purchase remains pending.
+            Payment is still pending. This page will keep polling the backend
+            while the purchase remains pending.
           </p>
         ) : null}
 
         {status === "FAILED" ? (
           <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            Payment failed. Return to the idea page and start a new checkout session.
+            Payment failed. Return to the idea page and start a new checkout
+            session.
           </p>
         ) : null}
 
@@ -198,11 +228,15 @@ export default function PaymentSuccessPage() {
         <div className="flex flex-wrap gap-3">
           {ideaId ? (
             <Link href={`/idea/${ideaId}`}>
-              <Button type="button" variant="outline">Return to idea</Button>
+              <Button type="button" variant="outline">
+                Return to idea
+              </Button>
             </Link>
           ) : null}
-          <Link href="/dashboard/purches-idea">
-            <Button type="button" variant="outline">Open purchases dashboard</Button>
+          <Link href="/my-purchases">
+            <Button type="button" variant="outline">
+              Open purchases dashboard
+            </Button>
           </Link>
         </div>
       </section>
