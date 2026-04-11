@@ -12,11 +12,12 @@ import {
   Save,
   Sparkles,
 } from "lucide-react";
+import Image from "next/image";
 import {
   type ChangeEvent,
   type FormEvent,
   useEffect,
-  useMemo,
+  useRef,
   useState,
 } from "react";
 import { Button } from "@/components/ui/button";
@@ -261,6 +262,40 @@ function SummaryCard({
   );
 }
 
+function ProfileAvatar({
+  src,
+  alt,
+  fallback,
+  className,
+  sizes,
+  loading,
+}: {
+  src: string | null;
+  alt: string;
+  fallback: string;
+  className: string;
+  sizes: string;
+  loading?: "eager" | "lazy";
+}) {
+  return (
+    <div className={className}>
+      {src ? (
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          sizes={sizes}
+          unoptimized
+          loading={loading}
+          className="object-cover"
+        />
+      ) : (
+        fallback
+      )}
+    </div>
+  );
+}
+
 function StatusPill({
   label,
   tone,
@@ -381,6 +416,8 @@ export default function MyProfilePage() {
   const [updateFeedback, setUpdateFeedback] = useState<UpdateFeedback>(null);
   const [isUpdateFormDirty, setIsUpdateFormDirty] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const previewImageUrlRef = useRef<string | null>(null);
 
   const profileSourceUser = asRecord(meQuery.data?.data);
   const profileSourceScientist = asRecord(profileSourceUser?.scientist);
@@ -397,23 +434,27 @@ export default function MyProfilePage() {
         imageFile: null,
       };
 
-  const previewImageUrl = useMemo(
-    () =>
-      currentUpdateForm.imageFile
-        ? URL.createObjectURL(currentUpdateForm.imageFile)
-        : null,
-    [currentUpdateForm.imageFile],
-  );
+  const replacePreviewImageUrl = (file: File | null) => {
+    if (previewImageUrlRef.current) {
+      URL.revokeObjectURL(previewImageUrlRef.current);
+      previewImageUrlRef.current = null;
+    }
+
+    const nextPreviewImageUrl = file ? URL.createObjectURL(file) : null;
+    previewImageUrlRef.current = nextPreviewImageUrl;
+    setPreviewImageUrl(nextPreviewImageUrl);
+  };
 
   useEffect(() => {
     return () => {
-      if (previewImageUrl) {
-        URL.revokeObjectURL(previewImageUrl);
+      if (previewImageUrlRef.current) {
+        URL.revokeObjectURL(previewImageUrlRef.current);
       }
     };
-  }, [previewImageUrl]);
+  }, []);
 
   const resetUpdateFormFromProfile = () => {
+    replacePreviewImageUrl(null);
     setUpdateForm(initialUpdateForm);
     setIsUpdateFormDirty(false);
     setUpdateFeedback(null);
@@ -437,6 +478,7 @@ export default function MyProfilePage() {
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const imageFile = event.target.files?.[0] ?? null;
+    replacePreviewImageUrl(imageFile);
 
     setUpdateForm({
       ...currentUpdateForm,
@@ -485,6 +527,7 @@ export default function MyProfilePage() {
         image: currentUpdateForm.imageFile,
       });
 
+      replacePreviewImageUrl(null);
       queryClient.setQueryData(["users", "me"], response);
       void queryClient.invalidateQueries({ queryKey: ["users", "me"] });
       setUpdateForm(initialUpdateForm);
@@ -535,6 +578,8 @@ export default function MyProfilePage() {
   const email = getOptionalString(user.email) ?? "N/A";
   const storedProfileImageUrl = getProfileImageUrl(user, scientist, member);
   const displayProfileImageUrl = previewImageUrl ?? storedProfileImageUrl;
+  const heroProfileImageAlt = `${fullName} profile`;
+  const previewProfileImageAlt = `${fullName} preview`;
   const initials = getInitials(fullName);
   const hasVerifiedEmail =
     typeof user.emailVerified === "boolean" ? user.emailVerified : false;
@@ -657,17 +702,14 @@ export default function MyProfilePage() {
             </div>
 
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
-              <div className="relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-[26px] border border-white/70 bg-slate-100 text-2xl font-semibold text-slate-700 shadow-sm">
-                {displayProfileImageUrl ? (
-                  <img
-                    src={displayProfileImageUrl}
-                    alt={`${fullName} profile`}
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  initials
-                )}
-              </div>
+              <ProfileAvatar
+                src={displayProfileImageUrl}
+                alt={heroProfileImageAlt}
+                fallback={initials}
+                sizes="96px"
+                loading="eager"
+                className="relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-[26px] border border-white/70 bg-slate-100 text-2xl font-semibold text-slate-700 shadow-sm"
+              />
 
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -853,17 +895,13 @@ export default function MyProfilePage() {
 
           <div className="mt-5 rounded-[22px] border border-slate-200 bg-slate-50/80 p-4 shadow-sm">
             <div className="flex items-center gap-4">
-              <div className="relative flex size-[4.5rem] items-center justify-center overflow-hidden rounded-[22px] border border-white/70 bg-white text-lg font-semibold text-slate-700 shadow-sm">
-                {displayProfileImageUrl ? (
-                  <img
-                    src={displayProfileImageUrl}
-                    alt={`${fullName} preview`}
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  initials
-                )}
-              </div>
+              <ProfileAvatar
+                src={displayProfileImageUrl}
+                alt={previewProfileImageAlt}
+                fallback={initials}
+                sizes="72px"
+                className="relative flex size-[4.5rem] items-center justify-center overflow-hidden rounded-[22px] border border-white/70 bg-white text-lg font-semibold text-slate-700 shadow-sm"
+              />
 
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-900">
