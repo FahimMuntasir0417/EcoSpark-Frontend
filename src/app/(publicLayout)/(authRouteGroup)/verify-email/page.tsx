@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   AuthFeedback,
   AuthFormField,
+  LOGIN_NOTICE_KEY,
+  PENDING_VERIFY_EMAIL_KEY,
+  VERIFY_EMAIL_COMPLETE_NOTICE,
+  VERIFY_EMAIL_NOTICE_KEY,
   authFieldSchemas,
   createZodFieldValidator,
   getApiErrorMessage,
@@ -17,9 +21,6 @@ import {
 } from "@/features/auth";
 import type { FormFeedback } from "@/features/auth";
 import type { VerifyEmailInput } from "@/services/auth.service";
-
-const PENDING_VERIFY_EMAIL_KEY = "eco_spark_pending_verify_email";
-
 type VerifyFormValues = {
   otp: string;
 };
@@ -29,6 +30,7 @@ const initialFormState: VerifyFormValues = {
 };
 
 export default function VerifyEmailPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const verifyEmailMutation = useVerifyEmailMutation();
   const [feedback, setFeedback] = useState<FormFeedback | null>(null);
@@ -63,12 +65,15 @@ export default function VerifyEmailPage() {
 
         if (typeof window !== "undefined") {
           window.localStorage.removeItem(PENDING_VERIFY_EMAIL_KEY);
+          window.sessionStorage.removeItem(VERIFY_EMAIL_NOTICE_KEY);
+          window.sessionStorage.setItem(
+            LOGIN_NOTICE_KEY,
+            VERIFY_EMAIL_COMPLETE_NOTICE,
+          );
         }
 
-        setFeedback({
-          type: "success",
-          text: response.message || "Email verified successfully.",
-        });
+        router.replace("/login");
+        return response;
       } catch (error) {
         setFeedback({ type: "error", text: getApiErrorMessage(error) });
       }
@@ -78,6 +83,17 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     const emailFromQuery = searchParams.get("email")?.trim() ?? "";
     const otpFromQuery = searchParams.get("otp") ?? searchParams.get("token");
+    const verifyNotice =
+      typeof window !== "undefined"
+        ? window.sessionStorage.getItem(VERIFY_EMAIL_NOTICE_KEY)?.trim() ?? ""
+        : "";
+
+    if (verifyNotice) {
+      setFeedback({ type: "error", text: verifyNotice });
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem(VERIFY_EMAIL_NOTICE_KEY);
+      }
+    }
 
     if (emailFromQuery) {
       setResolvedEmail(emailFromQuery);

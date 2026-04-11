@@ -1,5 +1,6 @@
 "use client";
 
+import { isAxiosError } from "axios";
 import { ArrowRight, CheckCircle2, Leaf, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -12,6 +13,9 @@ import {
   AuthFeedback,
   AuthFormField,
   LOGIN_NOTICE_KEY,
+  PENDING_VERIFY_EMAIL_KEY,
+  VERIFY_EMAIL_NOTICE_KEY,
+  VERIFY_EMAIL_REQUIRED_NOTICE,
   authFieldSchemas,
   createZodFieldValidator,
   getApiErrorMessage,
@@ -20,6 +24,7 @@ import {
   useLoginMutation,
 } from "@/features/auth";
 import { getUserRole, syncRoleFromAccessToken } from "@/lib/auth/session";
+import { ApiClientError, normalizeApiError } from "@/lib/errors/api-error";
 import { resolvePostLoginTarget } from "@/lib/navigation/redirect-policy";
 import {
   resolveLoginRedirectTargetFromSession,
@@ -27,8 +32,11 @@ import {
 } from "./_redirect";
 import type { FormFeedback } from "@/features/auth";
 import type { LoginInput } from "@/services/auth.service";
+import type { ApiErrorResponse } from "@/types/api";
 
 const DEFAULT_AUTH_REDIRECT_PATH = "/dashboard";
+const EMAIL_VERIFICATION_REQUIRED_PATTERN =
+  /\bEMAIL_NOT_VERIFIED\b|email\s+(is\s+)?not\s+verified|verify\s+your\s+email|email\s+verification(?:\s+required)?|account\s+not\s+verified|unverified/i;
 
 const initialFormState: LoginInput = {
   email: "",
@@ -68,11 +76,106 @@ const trustSignals = [
   },
 ];
 
+function appendCandidate(candidates: string[], value: unknown) {
+  if (typeof value !== "string") {
+    return;
+  }
+
+  const normalized = value.trim();
+
+  if (normalized) {
+    candidates.push(normalized);
+  }
+}
+
+function appendErrorItems(candidates: string[], value: unknown) {
+  if (!Array.isArray(value)) {
+    return;
+  }
+
+  for (const item of value) {
+    if (typeof item === "string") {
+      appendCandidate(candidates, item);
+      continue;
+    }
+
+    if (!item || typeof item !== "object") {
+      continue;
+    }
+
+    const record = item as Record<string, unknown>;
+    appendCandidate(candidates, record.message);
+    appendCandidate(candidates, record.code);
+    appendCandidate(candidates, record.type);
+  }
+}
+
+function appendAxiosErrorCandidates(candidates: string[], error: unknown) {
+  if (!isAxiosError<ApiErrorResponse & Record<string, unknown>>(error)) {
+    return;
+  }
+
+  appendCandidate(candidates, error.message);
+  appendCandidate(candidates, error.code);
+
+  const payload = error.response?.data;
+
+  if (!payload) {
+    return;
+  }
+
+  if (typeof payload === "string") {
+    appendCandidate(candidates, payload);
+    return;
+  }
+
+  appendCandidate(candidates, payload.message);
+  appendCandidate(candidates, payload.code);
+  appendCandidate(candidates, payload.error);
+  appendErrorItems(candidates, payload.errors);
+  appendErrorItems(candidates, payload.issues);
+  appendErrorItems(candidates, payload.details);
+
+  if (!payload.error || typeof payload.error !== "object") {
+    return;
+  }
+
+  const nestedError = payload.error as Record<string, unknown>;
+  appendCandidate(candidates, nestedError.message);
+  appendCandidate(candidates, nestedError.code);
+  appendErrorItems(candidates, nestedError.errors);
+}
+
+function buildVerifyEmailHref(email: string) {
+  return `/verify-email?email=${encodeURIComponent(email)}`;
+}
+
+function isEmailVerificationRequired(error: unknown) {
+  const normalized = normalizeApiError(error);
+  const candidates = [
+    normalized.message,
+    ...(normalized.errors?.map((item) => item.message) ?? []),
+  ];
+
+  if (error instanceof ApiClientError) {
+    appendCandidate(candidates, error.message);
+    appendErrorItems(candidates, error.errors);
+    appendAxiosErrorCandidates(candidates, error.causeError);
+  }
+
+  appendAxiosErrorCandidates(candidates, error);
+
+  return candidates.some((candidate) =>
+    EMAIL_VERIFICATION_REQUIRED_PATTERN.test(candidate),
+  );
+}
+
 export default function LoginPage() {
   const loginMutation = useLoginMutation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [feedback, setFeedback] = useState<FormFeedback | null>(null);
+  const [verificationEmail, setVerificationEmail] = useState("");
 
   const requestedRedirect = sanitizeLoginRedirectPath(
     searchParams.get("redirect"),
@@ -100,6 +203,7 @@ export default function LoginPage() {
     },
     onSubmit: async ({ value }) => {
       setFeedback(null);
+      setVerificationEmail("");
 
       try {
         const payload: LoginInput = loginFormSchema.parse(value);
@@ -113,6 +217,26 @@ export default function LoginPage() {
         router.replace(target);
         router.refresh();
       } catch (error) {
+        const submittedEmail = value.email.trim();
+
+        if (submittedEmail && isEmailVerificationRequired(error)) {
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem(PENDING_VERIFY_EMAIL_KEY, submittedEmail);
+            window.sessionStorage.setItem(
+              VERIFY_EMAIL_NOTICE_KEY,
+              VERIFY_EMAIL_REQUIRED_NOTICE,
+            );
+          }
+
+          setVerificationEmail(submittedEmail);
+          setFeedback({
+            type: "error",
+            text: VERIFY_EMAIL_REQUIRED_NOTICE,
+          });
+          router.replace(buildVerifyEmailHref(submittedEmail));
+          return;
+        }
+
         setFeedback({ type: "error", text: getApiErrorMessage(error) });
       }
     },
@@ -203,6 +327,29 @@ export default function LoginPage() {
           <div className="mt-6">
             <AuthFeedback feedback={feedback} />
           </div>
+
+          {verificationEmail ? (
+            <div className="mt-4 rounded-[1.4rem] border border-amber-200 bg-amber-50/80 p-4">
+              <p className="text-sm font-semibold text-slate-950">
+                Email verification required
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Use the OTP sent to <span className="font-medium text-slate-900">{verificationEmail}</span>{" "}
+                to verify your account before signing in.
+              </p>
+              <Link
+                href={buildVerifyEmailHref(verificationEmail)}
+                className={buttonVariants({
+                  variant: "outline",
+                  size: "sm",
+                  className:
+                    "mt-4 h-10 rounded-xl border-amber-200 bg-white text-slate-900 hover:bg-amber-100/60",
+                })}
+              >
+                Go to verify email
+              </Link>
+            </div>
+          ) : null}
 
           <form
             className="mt-6 grid gap-5"
