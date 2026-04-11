@@ -22,6 +22,11 @@ export const getCommonNavItems = (role: UserRole): NavSection[] => {
           href: "/my-profile",
           icon: "User",
         },
+        {
+          title: "My purchases-Ideas",
+          href: "/my-purchases",
+          icon: "ShoppingCart",
+        },
       ],
     },
     {
