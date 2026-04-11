@@ -15,7 +15,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "check": "pnpm run typecheck && pnpm run lint",
-    "clean": "node -e \"const fs = require('node:fs'); for (const path of ['node_modules', '.dist', 'pnpm-lock.yaml']) fs.rmSync(path, { recursive: true, force: true })\""
+    "clean": "node -e \"const fs = require('node:fs'); for (const path of ['node_modules', '.next', '.dist', 'pnpm-lock.yaml']) fs.rmSync(path, { recursive: true, force: true })\""
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

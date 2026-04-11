@@ -2,14 +2,10 @@ const { existsSync, rmSync } = require("node:fs");
 const { join } = require("node:path");
 const { spawnSync } = require("node:child_process");
 
-const distDir = join(process.cwd(), ".dist");
+const buildDirs = [".next", ".dist"].map((dir) => join(process.cwd(), dir));
 
-if (!existsSync(distDir)) {
-  process.exit(0);
-}
-
-function removeWithFs() {
-  rmSync(distDir, {
+function removeWithFs(targetDir) {
+  rmSync(targetDir, {
     recursive: true,
     force: true,
     maxRetries: 10,
@@ -17,24 +13,30 @@ function removeWithFs() {
   });
 }
 
-if (process.platform === "win32") {
-  const literalPath = distDir.replace(/'/g, "''");
-  const cleanupCommand = [
-    `$target = '${literalPath}'`,
-    "if (Test-Path -LiteralPath $target) {",
-    "  Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction Stop",
-    "}",
-  ].join("; ");
-
-  const result = spawnSync(
-    "powershell",
-    ["-NoProfile", "-NonInteractive", "-Command", cleanupCommand],
-    { stdio: "inherit" },
-  );
-
-  if (result.status === 0 || !existsSync(distDir)) {
-    process.exit(0);
+for (const targetDir of buildDirs) {
+  if (!existsSync(targetDir)) {
+    continue;
   }
-}
 
-removeWithFs();
+  if (process.platform === "win32") {
+    const literalPath = targetDir.replace(/'/g, "''");
+    const cleanupCommand = [
+      `$target = '${literalPath}'`,
+      "if (Test-Path -LiteralPath $target) {",
+      "  Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction Stop",
+      "}",
+    ].join("; ");
+
+    const result = spawnSync(
+      "powershell",
+      ["-NoProfile", "-NonInteractive", "-Command", cleanupCommand],
+      { stdio: "inherit" },
+    );
+
+    if (result.status === 0 || !existsSync(targetDir)) {
+      continue;
+    }
+  }
+
+  removeWithFs(targetDir);
+}
