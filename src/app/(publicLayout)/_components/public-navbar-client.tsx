@@ -360,7 +360,7 @@ export function PublicNavbarClient({
   return (
     <>
       <header className="sticky top-0 z-30 px-4 pt-4 sm:px-6 lg:px-8">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 rounded-2xl border border-slate-400/70 bg-[linear-gradient(145deg,#22314a_0%,#304563_38%,#4f7294_100%)] px-4 py-3 text-slate-100 shadow-[0_18px_55px_-35px_rgba(15,23,42,0.58)] backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 rounded-2xl border border-slate-500/72 bg-[linear-gradient(145deg,#1c2940_0%,#2a3c58_38%,#466889_100%)] px-4 py-3 text-slate-100 shadow-[0_18px_55px_-35px_rgba(15,23,42,0.62)] backdrop-blur-xl">
           <div className="flex min-w-0 items-center gap-3">
             <Link href="/" className="flex min-w-0 items-center gap-3">
               <div className="relative flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0f172a_0%,#1e40af_100%)] text-sm font-semibold text-white shadow-lg shadow-slate-900/20">
@@ -377,14 +377,14 @@ export function PublicNavbarClient({
               </div>
             </Link>
 
-            <div className="hidden rounded-full border border-slate-300/55 bg-slate-600/40 px-3 py-1 text-xs font-medium text-slate-100 xl:inline-flex">
+            <div className="hidden rounded-full border border-slate-400/60 bg-slate-700/48 px-3 py-1 text-xs font-medium text-slate-100 xl:inline-flex">
               <Sparkles className="mr-1.5 size-3.5" />
               Live innovation workspace
             </div>
           </div>
 
           <div className="hidden flex-1 items-center justify-center md:flex">
-            <nav className="flex items-center gap-1 rounded-full border border-slate-300/50 bg-white/16 p-1 backdrop-blur-sm">
+            <nav className="flex items-center gap-1 rounded-full border border-slate-400/55 bg-white/14 p-1 backdrop-blur-sm">
               {primaryLinks.map((link) => (
                 <DesktopNavLink
                   key={link.href}
@@ -399,7 +399,7 @@ export function PublicNavbarClient({
           <div className="hidden items-center gap-2 lg:flex">
             {isAuthenticated && role && dashboardHref ? (
               <>
-                <div className="rounded-full border border-slate-300/55 bg-slate-600/40 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-slate-100">
+                <div className="rounded-full border border-slate-400/60 bg-slate-700/48 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-slate-100">
                   {formatRoleLabel(role)}
                 </div>
                 <Link
@@ -427,12 +427,12 @@ export function PublicNavbarClient({
                         };
                       });
                     }}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-300/55 bg-slate-600/40 px-2.5 py-1.5 text-sm font-medium text-slate-100 transition-colors hover:border-slate-200/70 hover:bg-white/10 hover:text-white"
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-400/60 bg-slate-700/48 px-2.5 py-1.5 text-sm font-medium text-slate-100 transition-colors hover:border-slate-300/75 hover:bg-white/10 hover:text-white"
                     aria-expanded={profileMenuOpen}
                     aria-haspopup="menu"
                     aria-label="Open profile menu"
                   >
-                    <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-300/55 bg-slate-600/45 text-xs font-semibold text-white">
+                    <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-400/60 bg-slate-700/52 text-xs font-semibold text-white">
                       {avatarUrl ? (
                         <span
                           className="size-full bg-cover bg-center"
@@ -513,7 +513,7 @@ export function PublicNavbarClient({
               <>
                 <Link
                   href="/login"
-                  className="rounded-full border border-slate-300/55 bg-slate-600/40 px-4 py-2 text-sm font-medium text-slate-100 transition-colors hover:border-slate-200/70 hover:bg-white/10 hover:text-white"
+                  className="rounded-full border border-slate-400/60 bg-slate-700/48 px-4 py-2 text-sm font-medium text-slate-100 transition-colors hover:border-slate-300/75 hover:bg-white/10 hover:text-white"
                 >
                   Login
                 </Link>
@@ -531,7 +531,7 @@ export function PublicNavbarClient({
           <button
             type="button"
             onClick={toggleMobileMenu}
-            className="inline-flex size-11 items-center justify-center rounded-2xl border border-slate-300/55 bg-slate-600/40 text-slate-100 transition-colors hover:border-slate-200/70 hover:bg-white/10 hover:text-white lg:hidden"
+            className="inline-flex size-11 items-center justify-center rounded-2xl border border-slate-400/60 bg-slate-700/48 text-slate-100 transition-colors hover:border-slate-300/75 hover:bg-white/10 hover:text-white lg:hidden"
             aria-expanded={mobileOpen}
             aria-label={
               mobileOpen ? "Close navigation menu" : "Open navigation menu"

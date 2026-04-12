@@ -71,7 +71,7 @@ export function PublicFooter() {
   return (
     <footer className="px-4  pb-8 pt-4 sm:px-6 lg:px-8 lg:pb-10">
       <div className="mx-auto   max-w-6xl">
-        <div className="relative overflow-hidden rounded-[2rem] border border-slate-500/75 bg-[linear-gradient(145deg,#172033_0%,#22314a_38%,#35506f_100%)] p-8 text-slate-100 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.68)] sm:p-10">
+        <div className="relative overflow-hidden rounded-[2rem] border border-slate-500/78 bg-[linear-gradient(145deg,#141f33_0%,#1f2f48_38%,#33536f_100%)] p-8 text-slate-100 shadow-[0_30px_90px_-48px_rgba(15,23,42,0.72)] sm:p-10">
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(0deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:34px_34px] opacity-25" />
           <div className="pointer-events-none absolute -left-24 top-0 size-64 rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.28),rgba(56,189,248,0)_72%)]" />
           <div className="pointer-events-none absolute -right-28 bottom-0 size-72 rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.2),rgba(16,185,129,0)_74%)]" />
@@ -79,7 +79,7 @@ export function PublicFooter() {
 
           <div className="relative grid gap-10 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
             <div className="space-y-5">
-              <div className="inline-flex items-center gap-3 rounded-full border border-slate-400/70 bg-slate-700/55 px-3 py-2 shadow-[0_16px_40px_-28px_rgba(56,189,248,0.4)]">
+              <div className="inline-flex items-center gap-3 rounded-full border border-slate-500/70 bg-slate-800/52 px-3 py-2 shadow-[0_16px_40px_-28px_rgba(56,189,248,0.42)]">
                 <span className="flex size-9 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0ea5e9_0%,#10b981_100%)] text-sm font-semibold text-white shadow-lg shadow-sky-900/30">
                   ES
                 </span>
@@ -98,18 +98,18 @@ export function PublicFooter() {
               </p>
 
               <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.14em] text-slate-300">
-                <span className="rounded-full border border-slate-400/70 bg-slate-700/45 px-3 py-1">
+                <span className="rounded-full border border-slate-500/70 bg-slate-800/44 px-3 py-1">
                   Research teams
                 </span>
-                <span className="rounded-full border border-slate-400/70 bg-slate-700/45 px-3 py-1">
+                <span className="rounded-full border border-slate-500/70 bg-slate-800/44 px-3 py-1">
                   Admin workflows
                 </span>
-                <span className="rounded-full border border-slate-400/70 bg-slate-700/45 px-3 py-1">
+                <span className="rounded-full border border-slate-500/70 bg-slate-800/44 px-3 py-1">
                   Measurable impact
                 </span>
               </div>
 
-              <div className="rounded-[1.6rem] border border-slate-500/70 bg-white/[0.1] p-4 shadow-[0_24px_50px_-38px_rgba(15,23,42,0.65)]">
+              <div className="rounded-[1.6rem] border border-slate-500/75 bg-white/[0.08] p-4 shadow-[0_24px_50px_-38px_rgba(15,23,42,0.7)]">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
@@ -157,7 +157,7 @@ export function PublicFooter() {
               {footerNavigation.map((group) => (
                 <div
                   key={group.title}
-                  className="rounded-[1.5rem] border border-slate-500/70 bg-white/[0.1] p-4 shadow-[0_22px_45px_-38px_rgba(15,23,42,0.65)]"
+                  className="rounded-[1.5rem] border border-slate-500/75 bg-white/[0.08] p-4 shadow-[0_22px_45px_-38px_rgba(15,23,42,0.7)]"
                 >
                   <p className="text-sm font-semibold text-white">
                     {group.title}
@@ -179,7 +179,7 @@ export function PublicFooter() {
             </div>
           </div>
 
-          <div className="relative mt-8 overflow-hidden rounded-2xl border border-slate-500/70 bg-[linear-gradient(135deg,rgba(37,52,78,0.92),rgba(44,62,92,0.84),rgba(29,120,156,0.74))] p-4 sm:p-5">
+          <div className="relative mt-8 overflow-hidden rounded-2xl border border-slate-500/75 bg-[linear-gradient(135deg,rgba(31,45,68,0.94),rgba(39,56,84,0.86),rgba(24,108,145,0.74))] p-4 sm:p-5">
             <div className="pointer-events-none absolute -right-14 top-0 size-36 rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.22),rgba(56,189,248,0)_72%)]" />
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -202,7 +202,7 @@ export function PublicFooter() {
                 </Link>
                 <Link
                   href="/community"
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-400/70 bg-slate-700/45 px-4 py-2 text-sm font-semibold text-slate-100 transition-colors hover:bg-slate-600/55"
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-500/70 bg-slate-800/42 px-4 py-2 text-sm font-semibold text-slate-100 transition-colors hover:bg-slate-700/52"
                 >
                   <Globe2 className="size-4" />
                   Community

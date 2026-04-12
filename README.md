@@ -8,14 +8,28 @@ It supports public discovery, authenticated workspaces, idea moderation, campaig
 
 > Repository note: the package name is currently `eco_spark-backend`, but this repository contains the frontend application.
 
+## Repositories
+
+- Frontend Repo: `https://github.com/FahimMuntasir0417/EcoSpark-Frontend`
+- Backend Repo: `https://github.com/FahimMuntasir0417/EcoSpark-Hub`
+
 ## Live URLs
 
-No deployed production URLs are committed in this repository right now.
-
-- Frontend: `Not specified`
-- Backend API: `Not specified`
+- Frontend: `https://eco-spark-frontend.vercel.app`
+- Backend API: `https://assignment-eco-spark.vercel.app`
 - Local frontend: `http://localhost:3000`
 - Local backend default: `http://localhost:5000/api/v1`
+
+## Demo Video
+
+- `https://drive.google.com/file/d/1ZzTSUULNzsSZ-n4m5TGL6SHEAomqg9z7/view`
+
+## Demo Credentials
+
+| Role      | Email                       | Password         |
+| --------- | --------------------------- | ---------------- |
+| Admin     | `admin@ecospark.local`      | `Admin12345`     |
+| Scientist | `muntasirbejoy66@gmail.com` | `StrongPass123!` |
 
 ## Overview
 
@@ -26,7 +40,6 @@ The application supports four roles:
 - `MEMBER`
 - `SCIENTIST`
 - `ADMIN`
-- `SUPER_ADMIN`
 
 The platform is split into:
 
@@ -49,17 +62,17 @@ The platform is split into:
 
 ## Technologies Used
 
-| Area | Stack |
-| --- | --- |
-| Framework | Next.js `16.2.1` |
-| UI | React `19.2.4`, Tailwind CSS `4`, local UI primitives, shadcn/Base UI conventions |
-| Language | TypeScript with `strict` mode enabled |
-| Data fetching | TanStack Query |
-| Forms | TanStack Form + Zod |
-| HTTP client | Axios |
-| Validation/contracts | Zod |
-| Icons | Lucide React |
-| Linting | ESLint + `eslint-config-next` |
+| Area                 | Stack                                                                             |
+| -------------------- | --------------------------------------------------------------------------------- |
+| Framework            | Next.js `16.2.1`                                                                  |
+| UI                   | React `19.2.4`, Tailwind CSS `4`, local UI primitives, shadcn/Base UI conventions |
+| Language             | TypeScript with `strict` mode enabled                                             |
+| Data fetching        | TanStack Query                                                                    |
+| Forms                | TanStack Form + Zod                                                               |
+| HTTP client          | Axios                                                                             |
+| Validation/contracts | Zod                                                                               |
+| Icons                | Lucide React                                                                      |
+| Linting              | ESLint + `eslint-config-next`                                                     |
 
 ## Product Surface
 
@@ -176,12 +189,12 @@ Eco Spark uses a mixed server/client session model:
 
 ### Role defaults
 
-| Role | Default route |
-| --- | --- |
-| `MEMBER` | `/dashboard` |
-| `SCIENTIST` | `/scientist/dashboard` |
-| `ADMIN` | `/admin/dashboard` |
-| `SUPER_ADMIN` | `/admin/dashboard` |
+| Role          | Default route          |
+| ------------- | ---------------------- |
+| `MEMBER`      | `/dashboard`           |
+| `SCIENTIST`   | `/scientist/dashboard` |
+| `ADMIN`       | `/admin/dashboard`     |
+| `SUPER_ADMIN` | `/admin/dashboard`     |
 
 ## Environment
 
@@ -248,17 +261,17 @@ If the backend is not running, API requests will fail and the frontend will surf
 
 ## Available Scripts
 
-| Command | Purpose |
-| --- | --- |
-| `pnpm dev` | Start Next.js in webpack dev mode |
-| `pnpm dev:turbopack` | Start Next.js in turbopack dev mode |
-| `pnpm dev:webpack` | Explicit webpack dev mode |
-| `pnpm build` | Production build |
-| `pnpm start` | Start the production server |
-| `pnpm lint` | Run ESLint |
-| `pnpm typecheck` | Run TypeScript without emitting output |
-| `pnpm check` | Run typecheck and lint |
-| `pnpm clean` | Remove `node_modules`, `.next`, `.dist`, and `pnpm-lock.yaml` |
+| Command              | Purpose                                                       |
+| -------------------- | ------------------------------------------------------------- |
+| `pnpm dev`           | Start Next.js in webpack dev mode                             |
+| `pnpm dev:turbopack` | Start Next.js in turbopack dev mode                           |
+| `pnpm dev:webpack`   | Explicit webpack dev mode                                     |
+| `pnpm build`         | Production build                                              |
+| `pnpm start`         | Start the production server                                   |
+| `pnpm lint`          | Run ESLint                                                    |
+| `pnpm typecheck`     | Run TypeScript without emitting output                        |
+| `pnpm check`         | Run typecheck and lint                                        |
+| `pnpm clean`         | Remove `node_modules`, `.next`, `.dist`, and `pnpm-lock.yaml` |
 
 Build cleanup is also handled by [`scripts/clean-dist.js`](scripts/clean-dist.js).
 
