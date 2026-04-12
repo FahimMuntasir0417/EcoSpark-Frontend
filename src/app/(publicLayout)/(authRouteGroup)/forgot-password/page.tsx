@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useRouter } from "next/navigation";
@@ -58,54 +59,89 @@ export default function ForgotPasswordPage() {
   });
 
   return (
-    <main className="mx-auto w-full max-w-md space-y-4 p-6">
-      <h1 className="text-2xl font-semibold">Forgot Password</h1>
-      <p className="text-sm text-muted-foreground">
-        Enter your email and we will send an OTP, then move you directly to the reset step.
-      </p>
+    <main className="public-page-shell justify-center py-10 sm:py-12 lg:py-16">
+      <section className="surface-card mx-auto w-full max-w-lg p-6 sm:p-8">
+        <div className="space-y-3">
+          <p className="section-kicker">Forgot Password</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
+            Request a reset code
+          </h1>
+          <p className="text-sm leading-6 text-slate-600">
+            Enter your account email and we&apos;ll send a one-time code for the
+            password reset step.
+          </p>
+        </div>
 
-      <AuthFeedback feedback={feedback} />
+        <div className="mt-5">
+          <AuthFeedback feedback={feedback} />
+        </div>
 
-      <form
-        className="grid gap-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          void form.handleSubmit();
-        }}
-      >
-        <form.Field
-          name="email"
-          validators={{
-            onBlur: createZodFieldValidator(authFieldSchemas.email),
-            onChange: createZodFieldValidator(authFieldSchemas.email),
+        <form
+          className="mt-6 grid gap-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            void form.handleSubmit();
           }}
         >
-          {(field) => {
-            const fieldError = field.state.meta.isTouched
-              ? getFieldErrorMessage(field.state.meta.errors)
-              : null;
+          <form.Field
+            name="email"
+            validators={{
+              onBlur: createZodFieldValidator(authFieldSchemas.email),
+              onChange: createZodFieldValidator(authFieldSchemas.email),
+            }}
+          >
+            {(field) => {
+              const fieldError = field.state.meta.isTouched
+                ? getFieldErrorMessage(field.state.meta.errors)
+                : null;
 
-            return (
-              <AuthFormField id={field.name} label="Email" error={fieldError}>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="email"
-                  placeholder="Email"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                />
-              </AuthFormField>
-            );
-          }}
-        </form.Field>
+              return (
+                <AuthFormField id={field.name} label="Email address" error={fieldError}>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="email"
+                    placeholder="you@organization.com"
+                    className="h-11 rounded-xl border-slate-200 bg-white/85"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                  />
+                </AuthFormField>
+              );
+            }}
+          </form.Field>
 
-        <Button type="submit" disabled={forgetPasswordMutation.isPending}>
-          {forgetPasswordMutation.isPending ? "Sending..." : "Send OTP"}
-        </Button>
-      </form>
+          <p className="text-sm leading-6 text-slate-500">
+            After sending the code, you&apos;ll move directly to the reset screen.
+          </p>
+
+          <Button
+            type="submit"
+            size="lg"
+            className="h-11 rounded-xl bg-slate-950 text-white hover:bg-slate-800"
+            disabled={forgetPasswordMutation.isPending}
+          >
+            {forgetPasswordMutation.isPending ? "Sending..." : "Send OTP"}
+          </Button>
+        </form>
+
+        <div className="mt-6 flex items-center justify-between gap-4 text-sm">
+          <Link
+            href="/login"
+            className="font-medium text-slate-700 transition-colors hover:text-slate-950"
+          >
+            Back to sign in
+          </Link>
+          <Link
+            href="/register"
+            className="font-medium text-slate-700 transition-colors hover:text-slate-950"
+          >
+            Create account
+          </Link>
+        </div>
+      </section>
     </main>
   );
 }

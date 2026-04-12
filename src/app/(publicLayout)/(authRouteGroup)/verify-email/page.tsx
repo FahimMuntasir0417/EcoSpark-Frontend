@@ -1,10 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 import {
   AuthFeedback,
   AuthFormField,
@@ -139,56 +145,116 @@ export default function VerifyEmailPage() {
     }
   }, [emailFromQuery, savedNotice]);
 
-  const emailHint = resolvedEmail
-    ? `Using email: ${resolvedEmail}`
-    : "No email context found yet.";
-
   return (
-    <main className="mx-auto w-full max-w-md space-y-4 p-6">
-      <h1 className="text-2xl font-semibold">Verify Email</h1>
-      <p className="text-sm text-muted-foreground">{emailHint}</p>
+    <main className="public-page-shell justify-center py-10 sm:py-12 lg:py-16">
+      <section className="surface-card mx-auto w-full max-w-lg p-6 sm:p-8">
+        <div className="space-y-3">
+          <p className="section-kicker">Verify Email</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
+            Enter your verification code
+          </h1>
+          <p className="text-sm leading-6 text-slate-600">
+            Use the 6-digit code from your email to finish setup and continue to
+            sign in.
+          </p>
+        </div>
 
-      <AuthFeedback feedback={resolvedFeedback} />
+        <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Email
+          </p>
+          <p className="mt-1 break-all text-sm font-medium text-slate-900">
+            {resolvedEmail || "No email context found yet."}
+          </p>
+        </div>
 
-      <form
-        className="grid gap-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          void form.handleSubmit();
-        }}
-      >
-        <form.Field
-          name="otp"
-          validators={{
-            onBlur: createZodFieldValidator(authFieldSchemas.otp),
-            onChange: createZodFieldValidator(authFieldSchemas.otp),
+        <div className="mt-5">
+          <AuthFeedback feedback={resolvedFeedback} />
+        </div>
+
+        <form
+          className="mt-6 grid gap-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            void form.handleSubmit();
           }}
         >
-          {(field) => {
-            const fieldError = field.state.meta.isTouched
-              ? getFieldErrorMessage(field.state.meta.errors)
-              : null;
+          <form.Field
+            name="otp"
+            validators={{
+              onBlur: createZodFieldValidator(authFieldSchemas.otp),
+              onChange: createZodFieldValidator(authFieldSchemas.otp),
+            }}
+          >
+            {(field) => {
+              const fieldError = field.state.meta.isTouched
+                ? getFieldErrorMessage(field.state.meta.errors)
+                : null;
 
-            return (
-              <AuthFormField id={field.name} label="OTP" error={fieldError}>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  placeholder="OTP"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                />
-              </AuthFormField>
-            );
-          }}
-        </form.Field>
+              return (
+                <AuthFormField id={field.name} label="Verification code" error={fieldError}>
+                  <div className="pt-1">
+                    <InputOTP
+                      id={field.name}
+                      name={field.name}
+                      maxLength={6}
+                      inputMode="numeric"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(value) => field.handleChange(value)}
+                      containerClassName="justify-center"
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                      </InputOTPGroup>
+                      <InputOTPSeparator />
+                      <InputOTPGroup>
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                      </InputOTPGroup>
+                      <InputOTPSeparator />
+                      <InputOTPGroup>
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+                </AuthFormField>
+              );
+            }}
+          </form.Field>
 
-        <Button type="submit" disabled={verifyEmailMutation.isPending}>
-          {verifyEmailMutation.isPending ? "Verifying..." : "Verify Email"}
-        </Button>
-      </form>
+          <p className="text-center text-sm leading-6 text-slate-500">
+            Paste works here too. If the email is missing, restart from registration.
+          </p>
+
+          <Button
+            type="submit"
+            size="lg"
+            className="h-11 rounded-xl bg-slate-950 text-white hover:bg-slate-800"
+            disabled={verifyEmailMutation.isPending}
+          >
+            {verifyEmailMutation.isPending ? "Verifying..." : "Verify email"}
+          </Button>
+        </form>
+
+        <div className="mt-6 flex items-center justify-between gap-4 text-sm">
+          <Link
+            href="/login"
+            className="font-medium text-slate-700 transition-colors hover:text-slate-950"
+          >
+            Back to sign in
+          </Link>
+          <Link
+            href="/register"
+            className="font-medium text-slate-700 transition-colors hover:text-slate-950"
+          >
+            Register again
+          </Link>
+        </div>
+      </section>
     </main>
   );
 }
