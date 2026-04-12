@@ -179,8 +179,8 @@ function DesktopNavLink({
       className={cn(
         "rounded-full px-4 py-2 text-sm font-medium transition-all",
         active
-          ? "bg-slate-950 text-white shadow-sm"
-          : "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
+          ? "bg-white text-slate-950 shadow-sm"
+          : "text-slate-200 hover:bg-white/10 hover:text-white",
       )}
       aria-current={active ? "page" : undefined}
     >
@@ -246,7 +246,10 @@ export function PublicNavbarClient({
   const router = useRouter();
   const logoutMutation = useLogoutMutation();
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [profileMenuState, setProfileMenuState] = useState(() => ({
+    open: false,
+    pathname,
+  }));
   const [mobileMenuState, setMobileMenuState] = useState(() => ({
     open: false,
     pathname,
@@ -270,12 +273,10 @@ export function PublicNavbarClient({
   const displayEmail = getOptionalString(meRecord?.email);
   const avatarUrl = getAvatarUrl(meRecord);
   const avatarInitials = getInitials(displayName);
+  const profileMenuOpen =
+    profileMenuState.open && profileMenuState.pathname === pathname;
   const mobileOpen =
     mobileMenuState.open && mobileMenuState.pathname === pathname;
-
-  useEffect(() => {
-    setProfileMenuOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     if (!profileMenuOpen) {
@@ -287,13 +288,19 @@ export function PublicNavbarClient({
         profileMenuRef.current &&
         !profileMenuRef.current.contains(event.target as Node)
       ) {
-        setProfileMenuOpen(false);
+        setProfileMenuState({
+          open: false,
+          pathname,
+        });
       }
     };
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setProfileMenuOpen(false);
+        setProfileMenuState({
+          open: false,
+          pathname,
+        });
       }
     };
 
@@ -304,10 +311,17 @@ export function PublicNavbarClient({
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [profileMenuOpen]);
+  }, [profileMenuOpen, pathname]);
+
+  const closeProfileMenu = () => {
+    setProfileMenuState({
+      open: false,
+      pathname,
+    });
+  };
 
   const closeMobileMenu = () => {
-    setProfileMenuOpen(false);
+    closeProfileMenu();
     setMobileMenuState({
       open: false,
       pathname,
@@ -335,7 +349,6 @@ export function PublicNavbarClient({
 
     try {
       await logoutMutation.mutateAsync();
-      setProfileMenuOpen(false);
       closeMobileMenu();
       router.replace("/");
       router.refresh();
@@ -347,7 +360,7 @@ export function PublicNavbarClient({
   return (
     <>
       <header className="sticky top-0 z-30 px-4 pt-4 sm:px-6 lg:px-8">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 rounded-2xl border border-slate-200/90 bg-white/88 px-4 py-3 shadow-[0_18px_55px_-35px_rgba(15,23,42,0.45)] backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 rounded-2xl border border-slate-400/70 bg-[linear-gradient(145deg,#22314a_0%,#304563_38%,#4f7294_100%)] px-4 py-3 text-slate-100 shadow-[0_18px_55px_-35px_rgba(15,23,42,0.58)] backdrop-blur-xl">
           <div className="flex min-w-0 items-center gap-3">
             <Link href="/" className="flex min-w-0 items-center gap-3">
               <div className="relative flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#0f172a_0%,#1e40af_100%)] text-sm font-semibold text-white shadow-lg shadow-slate-900/20">
@@ -355,23 +368,23 @@ export function PublicNavbarClient({
                 <span className="absolute -right-1 -top-1 size-3 rounded-full border-2 border-white bg-emerald-400" />
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-950">
+                <p className="truncate text-sm font-semibold text-white">
                   Eco Spark
                 </p>
-                <p className="truncate text-xs text-slate-500">
+                <p className="truncate text-xs text-slate-300">
                   Sustainability ideas, reviewed fast
                 </p>
               </div>
             </Link>
 
-            <div className="hidden rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 xl:inline-flex">
+            <div className="hidden rounded-full border border-slate-300/55 bg-slate-600/40 px-3 py-1 text-xs font-medium text-slate-100 xl:inline-flex">
               <Sparkles className="mr-1.5 size-3.5" />
               Live innovation workspace
             </div>
           </div>
 
           <div className="hidden flex-1 items-center justify-center md:flex">
-            <nav className="flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1">
+            <nav className="flex items-center gap-1 rounded-full border border-slate-300/50 bg-white/16 p-1 backdrop-blur-sm">
               {primaryLinks.map((link) => (
                 <DesktopNavLink
                   key={link.href}
@@ -386,12 +399,12 @@ export function PublicNavbarClient({
           <div className="hidden items-center gap-2 lg:flex">
             {isAuthenticated && role && dashboardHref ? (
               <>
-                <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                <div className="rounded-full border border-slate-300/55 bg-slate-600/40 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-slate-100">
                   {formatRoleLabel(role)}
                 </div>
                 <Link
                   href={dashboardHref}
-                  className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-950 transition-colors hover:bg-slate-100"
                 >
                   <LayoutDashboard className="size-4" />
                   Dashboard
@@ -400,14 +413,26 @@ export function PublicNavbarClient({
                   <button
                     type="button"
                     onClick={() => {
-                      setProfileMenuOpen((open) => !open);
+                      setProfileMenuState((previousState) => {
+                        if (previousState.pathname !== pathname) {
+                          return {
+                            open: true,
+                            pathname,
+                          };
+                        }
+
+                        return {
+                          open: !previousState.open,
+                          pathname,
+                        };
+                      });
                     }}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-300/55 bg-slate-600/40 px-2.5 py-1.5 text-sm font-medium text-slate-100 transition-colors hover:border-slate-200/70 hover:bg-white/10 hover:text-white"
                     aria-expanded={profileMenuOpen}
                     aria-haspopup="menu"
                     aria-label="Open profile menu"
                   >
-                    <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-700">
+                    <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-300/55 bg-slate-600/45 text-xs font-semibold text-white">
                       {avatarUrl ? (
                         <span
                           className="size-full bg-cover bg-center"
@@ -423,7 +448,7 @@ export function PublicNavbarClient({
                     </span>
                     <ChevronDown
                       className={cn(
-                        "size-4 text-slate-500 transition-transform",
+                        "size-4 text-slate-300 transition-transform",
                         profileMenuOpen ? "rotate-180" : "",
                       )}
                     />
@@ -463,7 +488,7 @@ export function PublicNavbarClient({
                       <Link
                         href="/change-password"
                         onClick={() => {
-                          setProfileMenuOpen(false);
+                          closeProfileMenu();
                         }}
                         className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950"
                       >
@@ -488,13 +513,13 @@ export function PublicNavbarClient({
               <>
                 <Link
                   href="/login"
-                  className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
+                  className="rounded-full border border-slate-300/55 bg-slate-600/40 px-4 py-2 text-sm font-medium text-slate-100 transition-colors hover:border-slate-200/70 hover:bg-white/10 hover:text-white"
                 >
                   Login
                 </Link>
                 <Link
                   href="/register"
-                  className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-950 transition-colors hover:bg-slate-100"
                 >
                   Get Started
                   <ArrowRight className="size-4" />
@@ -506,7 +531,7 @@ export function PublicNavbarClient({
           <button
             type="button"
             onClick={toggleMobileMenu}
-            className="inline-flex size-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950 lg:hidden"
+            className="inline-flex size-11 items-center justify-center rounded-2xl border border-slate-300/55 bg-slate-600/40 text-slate-100 transition-colors hover:border-slate-200/70 hover:bg-white/10 hover:text-white lg:hidden"
             aria-expanded={mobileOpen}
             aria-label={
               mobileOpen ? "Close navigation menu" : "Open navigation menu"
