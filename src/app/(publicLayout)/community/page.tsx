@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
+import { useDeferredValue, useState } from "react";
 import {
   BookmarkCheck,
   MessageSquareQuote,
@@ -48,9 +48,27 @@ const REPORT_FIELD_OPTIONS = {
     "effectivenessRating",
     "beforeImageUrl",
     "afterImageUrl",
-    "createdAt",
     "updatedAt",
   ],
+};
+
+function isHttpUrl(value: string) {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isImageFieldKey(key: string) {
+  return /(image|photo|thumbnail|cover)/i.test(key);
+}
+
+type ReportImage = {
+  key: string;
+  label: string;
+  url: string;
 };
 
 function getReportTitle(report: ExperienceReport) {
@@ -80,7 +98,35 @@ function getReportConnectionLabel(report: ExperienceReport) {
 }
 
 function getReportFields(report: ExperienceReport) {
-  return getDirectoryFields(report, REPORT_FIELD_OPTIONS);
+  return getDirectoryFields(report, REPORT_FIELD_OPTIONS).filter((field) => {
+    const leafKey = field.key.split(".").at(-1) ?? "";
+
+    return leafKey !== "createdAt" && !isImageFieldKey(leafKey);
+  });
+}
+
+function getReportImageUrls(report: ExperienceReport) {
+  const reportRecord = report as Record<string, unknown>;
+  const candidates: ReportImage[] = [
+    {
+      key: "beforeImageUrl",
+      label: "Before Image",
+      url:
+        typeof reportRecord.beforeImageUrl === "string"
+          ? reportRecord.beforeImageUrl.trim()
+          : "",
+    },
+    {
+      key: "afterImageUrl",
+      label: "After Image",
+      url:
+        typeof reportRecord.afterImageUrl === "string"
+          ? reportRecord.afterImageUrl.trim()
+          : "",
+    },
+  ];
+
+  return candidates.filter((image) => image.url && isHttpUrl(image.url));
 }
 
 function getReportSearchText(report: ExperienceReport) {
@@ -124,10 +170,6 @@ export default function CommunityPage() {
     filteredReports.map((report) => getReportStatus(report)),
   ).size;
   const totalPages = Math.max(1, Math.ceil(totalReports / REPORTS_PAGE_SIZE));
-
-  useEffect(() => {
-    setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
-  }, [totalPages]);
 
   if (reportsQuery.isPending) {
     return (
@@ -343,109 +385,148 @@ export default function CommunityPage() {
         />
       ) : (
         <section className="space-y-5">
-          {pageReports.map((report) => (
-            <article key={report.id} className="surface-card overflow-hidden">
-              <div className="border-b border-amber-100 bg-[linear-gradient(135deg,rgba(255,251,235,0.95),rgba(255,241,242,0.92),rgba(255,255,255,0.98))] px-6 py-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      <DirectoryBadge
-                        icon={MessageSquareQuote}
-                        label={getReportStatus(report)}
-                        tone="accent"
-                        className="normal-case tracking-normal"
-                      />
-                      {report.isFeatured === true ? (
+          {pageReports.map((report) => {
+            const reportImages = getReportImageUrls(report);
+
+            return (
+              <article key={report.id} className="surface-card overflow-hidden">
+                <div className="border-b border-amber-100 bg-[linear-gradient(135deg,rgba(255,251,235,0.95),rgba(255,241,242,0.92),rgba(255,255,255,0.98))] px-6 py-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-2">
                         <DirectoryBadge
-                          icon={Star}
-                          label="Featured"
-                          tone="success"
+                          icon={MessageSquareQuote}
+                          label={getReportStatus(report)}
+                          tone="accent"
                           className="normal-case tracking-normal"
                         />
-                      ) : null}
+                        {report.isFeatured === true ? (
+                          <DirectoryBadge
+                            icon={Star}
+                            label="Featured"
+                            tone="success"
+                            className="normal-case tracking-normal"
+                          />
+                        ) : null}
+                      </div>
+
+                      <div>
+                        <p className="section-kicker">Experience Report</p>
+                        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                          {getReportTitle(report)}
+                        </h2>
+                        <p className="mt-2 text-sm text-slate-600">
+                          {getReportConnectionLabel(report)}
+                        </p>
+                      </div>
                     </div>
 
-                    <div>
-                      <p className="section-kicker">Experience Report</p>
-                      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                        {getReportTitle(report)}
-                      </h2>
-                      <p className="mt-2 text-sm text-slate-600">
-                        {getReportConnectionLabel(report)}
+                    <div className="rounded-2xl border border-amber-200 bg-white/90 px-4 py-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        Placement
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-slate-900">
+                        {getReportPlacement(report)}
                       </p>
                     </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-amber-200 bg-white/90 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Placement
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-900">
-                      {getReportPlacement(report)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-6 p-6">
-                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="section-kicker">Implementation Summary</p>
-                      <p className="mt-3 text-sm leading-7 text-slate-600">
-                        {getReportSummary(report)}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
-                      <p className="section-kicker">Editorial Note</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">
-                        This report is currently labeled as{" "}
-                        {getReportStatus(report).toLowerCase()} and appears in the
-                        directory with {getReportPlacement(report).toLowerCase()}.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3">
-                    <DirectoryDetailCard
-                      icon={BookmarkCheck}
-                      label="Connection"
-                      value={getReportConnectionLabel(report)}
-                      className="border-amber-100 bg-amber-50/60"
-                    />
-                    <DirectoryDetailCard
-                      icon={MessageSquareQuote}
-                      label="Review Stage"
-                      value={getReportStatus(report)}
-                      className="border-rose-100 bg-rose-50/60"
-                    />
-                    <DirectoryDetailCard
-                      icon={Star}
-                      label="Placement"
-                      value={getReportPlacement(report)}
-                      className="border-orange-100 bg-orange-50/60"
-                    />
-                    <DirectoryDetailCard
-                      icon={TrendingUp}
-                      label="Story Signal"
-                      value={
-                        report.isFeatured === true
-                          ? "Highlighted for broader attention"
-                          : "Available in the standard report stream"
-                      }
-                      className="border-yellow-100 bg-yellow-50/70"
-                    />
                   </div>
                 </div>
 
-                <DirectoryFieldGrid
-                  title="Published Fields"
-                  fields={getReportFields(report)}
-                />
-              </div>
-            </article>
-          ))}
+                <div className="space-y-6 p-6">
+                  {reportImages.length > 0 ? (
+                    <section className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="section-kicker">Report Images</p>
+                        <p className="text-xs text-slate-500">
+                          {reportImages.length} image{reportImages.length === 1 ? "" : "s"}
+                        </p>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {reportImages.map((image, index) => (
+                          <a
+                            key={`${report.id}-${image.key}-${index}`}
+                            href={image.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group overflow-hidden rounded-[1.35rem] border border-slate-200 bg-slate-50"
+                          >
+                            <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+                              <span className="absolute left-3 top-3 z-10 rounded-full border border-white/80 bg-white/92 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700 shadow-sm backdrop-blur">
+                                {image.label}
+                              </span>
+                              <img
+                                src={image.url}
+                                alt={`${getReportTitle(report)} ${image.label} ${index + 1}`}
+                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                                loading="lazy"
+                              />
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
+                    <div className="space-y-4">
+                      <div>
+                        <p className="section-kicker">Implementation Summary</p>
+                        <p className="mt-3 text-sm leading-7 text-slate-600">
+                          {getReportSummary(report)}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
+                        <p className="section-kicker">Editorial Note</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                          This report is currently labeled as{" "}
+                          {getReportStatus(report).toLowerCase()} and appears in the
+                          directory with {getReportPlacement(report).toLowerCase()}.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3">
+                      <DirectoryDetailCard
+                        icon={BookmarkCheck}
+                        label="Connection"
+                        value={getReportConnectionLabel(report)}
+                        className="border-amber-100 bg-amber-50/60"
+                      />
+                      <DirectoryDetailCard
+                        icon={MessageSquareQuote}
+                        label="Review Stage"
+                        value={getReportStatus(report)}
+                        className="border-rose-100 bg-rose-50/60"
+                      />
+                      <DirectoryDetailCard
+                        icon={Star}
+                        label="Placement"
+                        value={getReportPlacement(report)}
+                        className="border-orange-100 bg-orange-50/60"
+                      />
+                      <DirectoryDetailCard
+                        icon={TrendingUp}
+                        label="Story Signal"
+                        value={
+                          report.isFeatured === true
+                            ? "Highlighted for broader attention"
+                            : "Available in the standard report stream"
+                        }
+                        className="border-yellow-100 bg-yellow-50/70"
+                      />
+                    </div>
+                  </div>
+
+                  <DirectoryFieldGrid
+                    title="Published Fields"
+                    fields={getReportFields(report)}
+                  />
+                </div>
+              </article>
+            );
+          })}
         </section>
       )}
 

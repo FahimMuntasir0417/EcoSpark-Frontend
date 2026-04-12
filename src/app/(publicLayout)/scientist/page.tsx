@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useState } from "react";
+import { useDeferredValue, useState } from "react";
 import {
   BadgeCheck,
   Briefcase,
@@ -75,6 +75,38 @@ type ScientistRecord = Record<string, unknown>;
 
 function asRecord(value: unknown) {
   return value && typeof value === "object" ? (value as ScientistRecord) : null;
+}
+
+function getOptionalString(value: unknown) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function getImageUrlCandidate(value: unknown) {
+  const normalized = getOptionalString(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized.startsWith("/")) {
+    return normalized;
+  }
+
+  try {
+    const parsed = new URL(normalized);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return normalized;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }
 
 function getScientistField(scientist: Scientist, key: string) {
@@ -178,8 +210,42 @@ function getScientistExperience(scientist: Scientist) {
 }
 
 function getScientistProfilePhoto(scientist: Scientist) {
-  const photo = getScientistString(scientist, "profilePhoto");
-  return photo || "";
+  const record = scientist as ScientistRecord;
+  const profile = asRecord(record.scientist);
+  const user = asRecord(record.user);
+  const candidates = [
+    profile?.profilePhoto,
+    profile?.avatar,
+    profile?.avatarUrl,
+    profile?.photo,
+    profile?.photoUrl,
+    profile?.image,
+    profile?.imageUrl,
+    record.profilePhoto,
+    record.avatar,
+    record.avatarUrl,
+    record.photo,
+    record.photoUrl,
+    record.image,
+    record.imageUrl,
+    user?.profilePhoto,
+    user?.avatar,
+    user?.avatarUrl,
+    user?.photo,
+    user?.photoUrl,
+    user?.image,
+    user?.imageUrl,
+  ];
+
+  for (const candidate of candidates) {
+    const imageUrl = getImageUrlCandidate(candidate);
+
+    if (imageUrl) {
+      return imageUrl;
+    }
+  }
+
+  return "";
 }
 
 function getScientistLinkedAccount(scientist: Scientist) {
@@ -270,10 +336,6 @@ export default function ScientistPage() {
     1,
     Math.ceil(totalScientists / SCIENTISTS_PAGE_SIZE),
   );
-
-  useEffect(() => {
-    setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
-  }, [totalPages]);
 
   if (scientistsQuery.isPending) {
     return (
@@ -488,11 +550,11 @@ export default function ScientistPage() {
                   <div className="flex justify-center lg:justify-start">
                     <div className="relative size-24 overflow-hidden rounded-[1.6rem] border border-emerald-200 bg-white shadow-sm">
                       {getScientistProfilePhoto(scientist) ? (
-                        <div
-                          className="h-full w-full bg-cover bg-center"
-                          style={{
-                            backgroundImage: `url("${getScientistProfilePhoto(scientist)}")`,
-                          }}
+                        <img
+                          src={getScientistProfilePhoto(scientist)}
+                          alt={`${getScientistName(scientist)} profile`}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(16,185,129,0.16),rgba(14,165,233,0.14))] text-emerald-800">
