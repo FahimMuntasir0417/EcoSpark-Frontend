@@ -8,6 +8,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import Link from "next/link";
+import { HomeIdeasShowcase } from "./_components/home-ideas-showcase";
 
 const featureCards = [
   {
@@ -46,6 +47,36 @@ const workflowSteps = [
   {
     label: "Adopt",
     detail: "Members engage, pilot, and scale approved sustainability ideas.",
+  },
+];
+
+const inspirationPanels = [
+  {
+    eyebrow: "Urban Retrofit",
+    title: "Solar rooftops that turn dense neighborhoods into active energy surfaces.",
+    description:
+      "A visual section fed by online-hosted imagery to make the landing page feel more editorial and contemporary.",
+    stat: "City-scale renewable momentum",
+    imageUrl:
+      "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1200&q=80",
+  },
+  {
+    eyebrow: "Circular Systems",
+    title: "Facilities designed around reuse, efficiency, and cleaner operational loops.",
+    description:
+      "Use it as a visual break between workflow content and the live idea feed without changing backend data.",
+    stat: "Operational resilience in view",
+    imageUrl:
+      "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=1200&q=80",
+  },
+  {
+    eyebrow: "Landscape Recovery",
+    title: "Nature-forward imagery that keeps the page anchored in long-term environmental outcomes.",
+    description:
+      "The section is decorative, but it still supports the platform story: credible ideas with real-world impact.",
+    stat: "Environmental outcomes made visible",
+    imageUrl:
+      "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?auto=format&fit=crop&w=1200&q=80",
   },
 ];
 
@@ -214,6 +245,55 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,#082f49_0%,#0f172a_38%,#052e16_100%)] p-6 text-white shadow-[0_24px_70px_-42px_rgba(2,6,23,0.85)] sm:p-8">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(125,211,252,0.8),rgba(134,239,172,0.8),transparent)]" />
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">
+              Visual Section
+            </p>
+            <h2 className="max-w-3xl text-3xl font-semibold tracking-tight">
+              An editorial section with online-hosted imagery for a stronger first impression.
+            </h2>
+            <p className="max-w-3xl text-sm leading-7 text-slate-200 sm:text-base">
+              This block adds a more polished visual layer to the homepage while keeping the
+              rest of the content grounded in your existing platform story.
+            </p>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            {inspirationPanels.map((panel) => (
+              <article
+                key={panel.title}
+                className="group relative min-h-[22rem] overflow-hidden rounded-[1.7rem] border border-white/10 bg-slate-950"
+              >
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 bg-cover bg-center transition duration-500 group-hover:scale-105"
+                  style={{ backgroundImage: `url(${panel.imageUrl})` }}
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.18),rgba(15,23,42,0.82)_55%,rgba(2,6,23,0.96)_100%)]" />
+
+                <div className="relative flex h-full flex-col justify-between p-5">
+                  <div className="inline-flex w-fit rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-100 backdrop-blur-sm">
+                    {panel.eyebrow}
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="inline-flex w-fit rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-medium text-emerald-100">
+                      {panel.stat}
+                    </p>
+                    <h3 className="text-2xl font-semibold leading-tight">{panel.title}</h3>
+                    <p className="text-sm leading-6 text-slate-200">{panel.description}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="space-y-5">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Testimonials</p>
@@ -233,6 +313,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <HomeIdeasShowcase />
 
       <section className="space-y-5">
         <div className="space-y-2">
