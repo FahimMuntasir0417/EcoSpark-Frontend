@@ -9,6 +9,7 @@ import {
   buildLoginHrefFromRequestPath,
   canRoleAccessPath,
   isProtectedPath,
+  isUnauthenticatedAllowedPath,
   resolveUnauthorizedTarget,
 } from "@/lib/navigation/redirect-policy";
 import { extractUserRoleFromToken, isTokenExpired } from "@/lib/tokenUtils";
@@ -62,7 +63,7 @@ export function proxy(request: NextRequest) {
   const { isAuthenticated, role } = getSessionFromRequest(request);
   const protectedPath = isProtectedPath(pathname);
 
-  if (protectedPath && !isAuthenticated) {
+  if (!isAuthenticated && !isUnauthenticatedAllowedPath(pathname)) {
     const loginHref = buildLoginHrefFromRequestPath(pathname, search);
     return NextResponse.redirect(new URL(loginHref, request.url));
   }
@@ -76,15 +77,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/admin/:path*",
-    "/scientist/dashboard/:path*",
-    "/dashboard/:path*",
-    "/my-profile/:path*",
-    "/change-password/:path*",
-    "/my-vote/:path*",
-    "/my-comment/:path*",
-    "/saved-ideas/:path*",
-    "/my-purchases/:path*",
-    "/purches-idea/:path*",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)",
   ],
 };

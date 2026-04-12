@@ -10,8 +10,8 @@ It supports public discovery, authenticated workspaces, idea moderation, campaig
 
 ## Repositories
 
-- Frontend Repo: `https://github.com/FahimMuntasir0417/EcoSpark-Frontend`
-- Backend Repo: `https://github.com/FahimMuntasir0417/EcoSpark-Hub`
+- Frontend Repo: https://github.com/FahimMuntasir0417/EcoSpark-Frontend
+- Backend Repo: https://github.com/FahimMuntasir0417/EcoSpark-Hub
 
 ## Live URLs
 

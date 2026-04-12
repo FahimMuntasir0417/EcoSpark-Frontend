@@ -6,12 +6,10 @@ import { AUTH_COOKIE_KEYS } from "@/config/auth";
 import { env } from "@/config/env";
 import { loginInputSchema, type LoginInput } from "@/contracts/auth.contract";
 import {
-  canAccessAdminDashboard,
-  canAccessScientistDashboard,
-  getDefaultDashboardRoute,
   normalizeUserRole,
   type UserRole,
 } from "@/lib/authUtils";
+import { APP_ROUTES } from "@/lib/navigation/redirect-policy";
 import { extractUserRoleFromToken, parseJwtPayload } from "@/lib/tokenUtils";
 
 type AuthPayload = {
@@ -92,58 +90,13 @@ function getTokenMaxAgeSeconds(token: string): number | undefined {
   return maxAge;
 }
 
-function toSafeRedirectPath(value: string | null | undefined): string | null {
-  if (!value) {
-    return null;
-  }
-
-  const nextPath = value.trim();
-
-  if (nextPath.length === 0) {
-    return null;
-  }
-
-  if (!nextPath.startsWith("/") || nextPath.startsWith("//")) {
-    return null;
-  }
-
-  if (nextPath === "/login" || nextPath.startsWith("/login/")) {
-    return null;
-  }
-
-  return nextPath;
-}
-
-function canRoleVisitPath(pathname: string, role: UserRole | null): boolean {
-  if (pathname.startsWith("/admin/") || pathname === "/admin") {
-    return canAccessAdminDashboard(role);
-  }
-
-  if (
-    pathname.startsWith("/scientist/dashboard/") ||
-    pathname === "/scientist/dashboard"
-  ) {
-    return canAccessScientistDashboard(role);
-  }
-
-  return true;
-}
-
 function resolvePostLoginTarget(
   requestedRedirect: string | null | undefined,
-  role: UserRole | null,
+  role: string | null,
 ): string {
-  const safeRequestedRedirect = toSafeRedirectPath(requestedRedirect);
-
-  if (safeRequestedRedirect && canRoleVisitPath(safeRequestedRedirect, role)) {
-    return safeRequestedRedirect;
-  }
-
-  if (role) {
-    return getDefaultDashboardRoute(role);
-  }
-
-  return "/";
+  void requestedRedirect;
+  void role;
+  return APP_ROUTES.home;
 }
 
 async function requestLogin(input: LoginInput): Promise<AuthPayload> {

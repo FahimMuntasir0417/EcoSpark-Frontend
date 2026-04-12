@@ -1,11 +1,4 @@
-import {
-  canAccessAdminDashboard,
-  canAccessScientistDashboard,
-  getDefaultDashboardRoute,
-  normalizeUserRole,
-  type UserRole,
-} from "@/lib/authUtils";
-import { getUserRole, syncRoleFromAccessToken } from "@/lib/auth/session";
+import { APP_ROUTES } from "@/lib/navigation/redirect-policy";
 
 export function sanitizeLoginRedirectPath(
   value: string | null | undefined,
@@ -35,40 +28,17 @@ export function sanitizeLoginRedirectPath(
   return nextPath;
 }
 
-function canRoleAccessPath(pathname: string, role: UserRole | null): boolean {
-  if (pathname.startsWith("/admin/") || pathname === "/admin") {
-    return canAccessAdminDashboard(role);
-  }
-
-  if (pathname.startsWith("/scientist/dashboard")) {
-    return canAccessScientistDashboard(role);
-  }
-
-  return true;
-}
-
 export function resolveLoginRedirectTarget(
   requestedRedirect: string | null | undefined,
   roleInput: string | null | undefined,
 ): string {
-  const role = normalizeUserRole(roleInput);
-  const safeRequestedPath = sanitizeLoginRedirectPath(requestedRedirect);
-
-  if (safeRequestedPath && canRoleAccessPath(safeRequestedPath, role)) {
-    return safeRequestedPath;
-  }
-
-  if (role) {
-    return getDefaultDashboardRoute(role);
-  }
-
-  return "/";
+  void requestedRedirect;
+  void roleInput;
+  return APP_ROUTES.home;
 }
 
 export function resolveLoginRedirectTargetFromSession(
   requestedRedirect: string | null | undefined,
 ): string {
-  const roleFromSession = getUserRole() ?? syncRoleFromAccessToken();
-
-  return resolveLoginRedirectTarget(requestedRedirect, roleFromSession);
+  return resolveLoginRedirectTarget(requestedRedirect, null);
 }

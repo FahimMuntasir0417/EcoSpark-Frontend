@@ -11,6 +11,14 @@ export const APP_ROUTES = {
   register: "/register",
 } as const;
 
+const AUTH_ROUTES = [
+  APP_ROUTES.login,
+  APP_ROUTES.register,
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+] as const;
+
 const GENERIC_PROTECTED_ROUTES = [
   "/dashboard",
   "/my-profile",
@@ -55,16 +63,12 @@ function getPathnameFromInternalPath(path: string): string {
   }
 }
 
-export function isLoginPath(pathname: string): boolean {
-  return pathname === APP_ROUTES.login || pathname.startsWith("/login/");
+export function isAuthPath(pathname: string): boolean {
+  return AUTH_ROUTES.some((route) => matchesRoutePrefix(pathname, route));
 }
 
-export function isAuthPath(pathname: string): boolean {
-  return (
-    isLoginPath(pathname) ||
-    pathname === APP_ROUTES.register ||
-    pathname.startsWith("/register/")
-  );
+export function isUnauthenticatedAllowedPath(pathname: string): boolean {
+  return pathname === APP_ROUTES.home || isAuthPath(pathname);
 }
 
 export function isAdminPath(pathname: string): boolean {
@@ -131,20 +135,9 @@ export function resolvePostLoginTarget(
   redirectPathname: string | null | undefined,
   role: string | null | undefined,
 ): string {
-  const safePath = sanitizeInternalPath(redirectPathname);
-
-  if (safePath) {
-    const pathname = getPathnameFromInternalPath(safePath);
-
-    if (
-      !isAuthPath(pathname) &&
-      (!isProtectedPath(pathname) || canRoleAccessPath(pathname, role))
-    ) {
-      return safePath;
-    }
-  }
-
-  return resolveRoleDashboardTarget(role);
+  void redirectPathname;
+  void role;
+  return APP_ROUTES.home;
 }
 
 export function buildLoginHref(nextPath?: string | null): string {
