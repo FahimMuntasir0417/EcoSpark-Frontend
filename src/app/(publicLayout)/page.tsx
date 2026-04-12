@@ -38,7 +38,8 @@ const workflowSteps = [
   },
   {
     label: "Moderate",
-    detail: "Admins validate quality and route the strongest proposals forward.",
+    detail:
+      "Admins validate quality and route the strongest proposals forward.",
   },
   {
     label: "Prioritize",
@@ -53,7 +54,8 @@ const workflowSteps = [
 const inspirationPanels = [
   {
     eyebrow: "Urban Retrofit",
-    title: "Solar rooftops that turn dense neighborhoods into active energy surfaces.",
+    title:
+      "Solar rooftops that turn dense neighborhoods into active energy surfaces.",
     description:
       "A visual section fed by online-hosted imagery to make the landing page feel more editorial and contemporary.",
     stat: "City-scale renewable momentum",
@@ -62,7 +64,8 @@ const inspirationPanels = [
   },
   {
     eyebrow: "Circular Systems",
-    title: "Facilities designed around reuse, efficiency, and cleaner operational loops.",
+    title:
+      "Facilities designed around reuse, efficiency, and cleaner operational loops.",
     description:
       "Use it as a visual break between workflow content and the live idea feed without changing backend data.",
     stat: "Operational resilience in view",
@@ -71,7 +74,8 @@ const inspirationPanels = [
   },
   {
     eyebrow: "Landscape Recovery",
-    title: "Nature-forward imagery that keeps the page anchored in long-term environmental outcomes.",
+    title:
+      "Nature-forward imagery that keeps the page anchored in long-term environmental outcomes.",
     description:
       "The section is decorative, but it still supports the platform story: credible ideas with real-world impact.",
     stat: "Environmental outcomes made visible",
@@ -106,38 +110,44 @@ const pricingPlans = [
     name: "Starter",
     price: "$0",
     subtitle: "For early pilots",
+    label: "Entry plan",
+    note: "Test the public idea library and submission workflow with minimal friction.",
     highlights: [
       "Public idea browsing",
       "Basic profile and submissions",
       "Community feedback access",
     ],
     ctaLabel: "Start free",
-    ctaHref: "/register",
+    ctaHref: "/subscription-plan",
   },
   {
     name: "Growth",
     price: "$29",
     subtitle: "Per member/month",
+    label: "Most popular",
+    note: "Built for active teams that need faster moderation, prioritization, and reporting.",
     highlights: [
       "Advanced moderation workspace",
       "Priority listing controls",
       "Role-specific analytics",
     ],
     ctaLabel: "Choose growth",
-    ctaHref: "/register",
+    ctaHref: "/subscription-plan",
     featured: true,
   },
   {
     name: "Enterprise",
     price: "Custom",
     subtitle: "For large organizations",
+    label: "Tailored rollout",
+    note: "Designed for organizations that need onboarding, policy controls, and hands-on support.",
     highlights: [
       "Dedicated onboarding",
       "Policy and workflow customization",
       "Priority support and training",
     ],
     ctaLabel: "Contact sales",
-    ctaHref: "/community",
+    ctaHref: "/subscription-plan",
   },
 ];
 
@@ -161,8 +171,9 @@ export default function Home() {
                 Build a structured pipeline for sustainability innovation.
               </h1>
               <p className="max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-                Eco Spark helps scientists, administrators, and members move ideas from
-                concept to implementation with clear workflows and measurable impact.
+                Eco Spark helps scientists, administrators, and members move
+                ideas from concept to implementation with clear workflows and
+                measurable impact.
               </p>
             </div>
 
@@ -185,15 +196,21 @@ export default function Home() {
 
           <aside className="grid gap-3 rounded-[1.6rem] border border-slate-700 bg-[linear-gradient(155deg,#020617_0%,#0f172a_50%,#1e293b_100%)] p-5 text-white shadow-[0_22px_45px_-28px_rgba(2,6,23,0.95)]">
             <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Active ideas</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-300">
+                Active ideas
+              </p>
               <p className="mt-2 text-2xl font-semibold">120+</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Review speed</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-300">
+                Review speed
+              </p>
               <p className="mt-2 text-2xl font-semibold">3.4x faster</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-300">Teams onboarded</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-300">
+                Teams onboarded
+              </p>
               <p className="mt-2 text-2xl font-semibold">40+</p>
             </div>
           </aside>
@@ -219,8 +236,12 @@ export default function Home() {
               <div className="inline-flex size-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-800">
                 <feature.icon className="size-5" />
               </div>
-              <p className="mt-4 text-base font-semibold text-slate-950">{feature.title}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{feature.description}</p>
+              <p className="mt-4 text-base font-semibold text-slate-950">
+                {feature.title}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {feature.description}
+              </p>
             </article>
           ))}
         </div>
@@ -228,7 +249,9 @@ export default function Home() {
 
       <section className="rounded-[1.8rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Process</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Process
+          </p>
           <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
             A clear path from concept to adoption.
           </h2>
@@ -236,10 +259,19 @@ export default function Home() {
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {workflowSteps.map((step, index) => (
-            <article key={step.label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Step {index + 1}</p>
-              <p className="mt-2 text-lg font-semibold text-slate-950">{step.label}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{step.detail}</p>
+            <article
+              key={step.label}
+              className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Step {index + 1}
+              </p>
+              <p className="mt-2 text-lg font-semibold text-slate-950">
+                {step.label}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {step.detail}
+              </p>
             </article>
           ))}
         </div>
@@ -254,11 +286,13 @@ export default function Home() {
               Visual Section
             </p>
             <h2 className="max-w-3xl text-3xl font-semibold tracking-tight">
-              An editorial section with online-hosted imagery for a stronger first impression.
+              An editorial section with online-hosted imagery for a stronger
+              first impression.
             </h2>
             <p className="max-w-3xl text-sm leading-7 text-slate-200 sm:text-base">
-              This block adds a more polished visual layer to the homepage while keeping the
-              rest of the content grounded in your existing platform story.
+              This block adds a more polished visual layer to the homepage while
+              keeping the rest of the content grounded in your existing platform
+              story.
             </p>
           </div>
 
@@ -284,8 +318,12 @@ export default function Home() {
                     <p className="inline-flex w-fit rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-medium text-emerald-100">
                       {panel.stat}
                     </p>
-                    <h3 className="text-2xl font-semibold leading-tight">{panel.title}</h3>
-                    <p className="text-sm leading-6 text-slate-200">{panel.description}</p>
+                    <h3 className="text-2xl font-semibold leading-tight">
+                      {panel.title}
+                    </h3>
+                    <p className="text-sm leading-6 text-slate-200">
+                      {panel.description}
+                    </p>
                   </div>
                 </div>
               </article>
@@ -296,7 +334,9 @@ export default function Home() {
 
       <section className="space-y-5">
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Testimonials</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Testimonials
+          </p>
           <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
             Trusted by teams delivering measurable outcomes.
           </h2>
@@ -304,11 +344,20 @@ export default function Home() {
 
         <div className="grid gap-4 lg:grid-cols-3">
           {testimonials.map((testimonial) => (
-            <article key={testimonial.name} className="relative rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <article
+              key={testimonial.name}
+              className="relative rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+            >
               <Quote className="absolute right-5 top-5 size-5 text-slate-200" />
-              <p className="text-sm leading-7 text-slate-700">"{testimonial.quote}"</p>
-              <p className="mt-5 text-sm font-semibold text-slate-950">{testimonial.name}</p>
-              <p className="text-xs uppercase tracking-[0.12em] text-slate-500">{testimonial.role}</p>
+              <p className="text-sm leading-7 text-slate-700">
+                "{testimonial.quote}"
+              </p>
+              <p className="mt-5 text-sm font-semibold text-slate-950">
+                {testimonial.name}
+              </p>
+              <p className="text-xs uppercase tracking-[0.12em] text-slate-500">
+                {testimonial.role}
+              </p>
             </article>
           ))}
         </div>
@@ -316,65 +365,169 @@ export default function Home() {
 
       <HomeIdeasShowcase />
 
-      <section className="space-y-5">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Pricing</p>
-          <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
-            Plans that scale with your organization.
-          </h2>
-        </div>
+      <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-[linear-gradient(145deg,#ffffff_0%,#f8fbff_45%,#f8fafc_100%)] p-6 shadow-[0_28px_80px_-50px_rgba(15,23,42,0.38)] sm:p-8">
+        <div className="pointer-events-none absolute -right-20 top-0 size-60 rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.14),rgba(56,189,248,0)_72%)]" />
+        <div className="pointer-events-none absolute -left-20 bottom-0 size-60 rounded-full bg-[radial-gradient(circle,rgba(74,222,128,0.12),rgba(74,222,128,0)_72%)]" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(56,189,248,0.8),rgba(74,222,128,0.75),transparent)]" />
 
-        <div className="grid gap-4 lg:grid-cols-3">
-          {pricingPlans.map((plan) => (
-            <article
-              key={plan.name}
-              className={`rounded-3xl border p-6 shadow-sm ${
-                plan.featured ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-900"
-              }`}
-            >
-              <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${plan.featured ? "text-slate-300" : "text-slate-500"}`}>
-                {plan.name}
+        <div className="relative space-y-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Pricing
               </p>
-              <p className="mt-3 text-3xl font-semibold">{plan.price}</p>
-              <p className={`mt-1 text-sm ${plan.featured ? "text-slate-300" : "text-slate-600"}`}>{plan.subtitle}</p>
+              <h2 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+                Plans that scale with your organization.
+              </h2>
+              <p className="max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+                Start lean, move into team operations, or roll out a tailored
+                workspace with governance and onboarding.
+              </p>
+            </div>
 
-              <ul className="mt-5 space-y-2">
-                {plan.highlights.map((highlight) => (
-                  <li key={highlight} className="flex items-start gap-2 text-sm">
-                    <CheckCircle2 className={`mt-0.5 size-4 shrink-0 ${plan.featured ? "text-cyan-300" : "text-emerald-600"}`} />
-                    <span>{highlight}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+              <span className="rounded-full border border-white/80 bg-white/85 px-3 py-2 shadow-[0_14px_32px_-26px_rgba(15,23,42,0.28)] backdrop-blur">
+                Transparent plan structure
+              </span>
+              <span className="rounded-full border border-white/80 bg-white/85 px-3 py-2 shadow-[0_14px_32px_-26px_rgba(15,23,42,0.28)] backdrop-blur">
+                Flexible team growth
+              </span>
+            </div>
+          </div>
 
-              <Link
-                href={plan.ctaHref}
-                className={`mt-6 inline-flex w-full items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
-                  plan.featured ? "bg-white text-slate-950 hover:bg-slate-100" : "bg-slate-950 text-white hover:bg-slate-800"
+          <div className="grid gap-4 xl:grid-cols-3">
+            {pricingPlans.map((plan) => (
+              <article
+                key={plan.name}
+                className={`relative overflow-hidden rounded-[1.8rem] border p-6 shadow-[0_22px_60px_-42px_rgba(15,23,42,0.35)] transition-transform duration-200 hover:-translate-y-1 ${
+                  plan.featured
+                    ? "border-slate-950 bg-[linear-gradient(165deg,#020617_0%,#0f172a_62%,#111827_100%)] text-white"
+                    : "border-slate-200 bg-white/95 text-slate-900"
                 }`}
               >
-                {plan.ctaLabel}
-              </Link>
-            </article>
-          ))}
+                {plan.featured ? (
+                  <>
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-[linear-gradient(90deg,#22d3ee,#38bdf8,#4ade80)]" />
+                    <div className="pointer-events-none absolute -right-16 top-10 size-36 rounded-full bg-[radial-gradient(circle,rgba(34,211,238,0.18),rgba(34,211,238,0)_72%)]" />
+                  </>
+                ) : (
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.45),transparent)]" />
+                )}
+
+                <div className="relative flex h-full flex-col">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <p
+                          className={`text-xs font-semibold uppercase tracking-[0.18em] ${plan.featured ? "text-slate-300" : "text-slate-500"}`}
+                        >
+                          {plan.name}
+                        </p>
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${
+                            plan.featured
+                              ? "border-cyan-300/25 bg-cyan-300/10 text-cyan-200"
+                              : "border-slate-200 bg-slate-50 text-slate-700"
+                          }`}
+                        >
+                          {plan.label}
+                        </span>
+                      </div>
+
+                      <div>
+                        <p className="text-4xl font-semibold tracking-tight">
+                          {plan.price}
+                        </p>
+                        <p
+                          className={`mt-2 text-sm ${plan.featured ? "text-slate-300" : "text-slate-600"}`}
+                        >
+                          {plan.subtitle}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`mt-5 rounded-[1.35rem] border p-4 ${
+                      plan.featured
+                        ? "border-white/10 bg-white/5 text-slate-200"
+                        : "border-slate-200 bg-slate-50/85 text-slate-600"
+                    }`}
+                  >
+                    <p className="text-sm leading-6">{plan.note}</p>
+                  </div>
+
+                  <ul className="mt-6 space-y-3">
+                    {plan.highlights.map((highlight) => (
+                      <li
+                        key={highlight}
+                        className="flex items-start gap-3 text-sm"
+                      >
+                        <span
+                          className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full border ${
+                            plan.featured
+                              ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-200"
+                              : "border-emerald-200 bg-emerald-50 text-emerald-600"
+                          }`}
+                        >
+                          <CheckCircle2 className="size-3.5" />
+                        </span>
+                        <span
+                          className={
+                            plan.featured ? "text-slate-100" : "text-slate-700"
+                          }
+                        >
+                          {highlight}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-6 border-t border-slate-200/15 pt-5">
+                    <Link
+                      href={plan.ctaHref}
+                      className={`inline-flex w-full items-center justify-center rounded-full px-4 py-3 text-sm font-medium transition-all ${
+                        plan.featured
+                          ? "bg-white text-slate-950 hover:bg-slate-100 hover:shadow-[0_18px_34px_-24px_rgba(255,255,255,0.45)]"
+                          : "bg-slate-950 text-white hover:bg-slate-800 hover:shadow-[0_18px_34px_-24px_rgba(15,23,42,0.45)]"
+                      }`}
+                    >
+                      {plan.ctaLabel}
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
       <section className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_40%,#0ea5e9_100%)] p-8 text-white shadow-[0_20px_60px_-36px_rgba(2,6,23,0.8)] lg:p-10">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-2xl space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">Call to action</p>
-            <h2 className="text-3xl font-semibold tracking-tight">Ready to launch your sustainability workspace?</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">
+              Call to action
+            </p>
+            <h2 className="text-3xl font-semibold tracking-tight">
+              Ready to launch your sustainability workspace?
+            </h2>
             <p className="text-sm leading-7 text-slate-200 sm:text-base">
-              Bring your team into one platform for submission, review, and adoption.
+              Bring your team into one platform for submission, review, and
+              adoption.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Link href="/register" className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition-colors hover:bg-slate-100">
+            <Link
+              href="/register"
+              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition-colors hover:bg-slate-100"
+            >
               Get started
             </Link>
-            <Link href="/community" className="rounded-full border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/15">
+            <Link
+              href="/community"
+              className="rounded-full border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/15"
+            >
               Talk to community
             </Link>
           </div>
