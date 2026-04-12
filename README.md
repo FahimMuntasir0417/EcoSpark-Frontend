@@ -15,14 +15,14 @@ It supports public discovery, authenticated workspaces, idea moderation, campaig
 
 ## Live URLs
 
-- Frontend: `https://eco-spark-frontend.vercel.app`
-- Backend API: `https://assignment-eco-spark.vercel.app`
-- Local frontend: `http://localhost:3000`
-- Local backend default: `http://localhost:5000/api/v1`
+- Frontend: https://eco-spark-frontend.vercel.app
+- Backend API: https://assignment-eco-spark.vercel.app
+- Local frontend: http://localhost:3000
+- Local backend default: http://localhost:5000/api/v1
 
 ## Demo Video
 
-- `https://drive.google.com/file/d/1ZzTSUULNzsSZ-n4m5TGL6SHEAomqg9z7/view`
+- https://drive.google.com/file/d/1ZzTSUULNzsSZ-n4m5TGL6SHEAomqg9z7/view
 
 ## Demo Credentials
 
