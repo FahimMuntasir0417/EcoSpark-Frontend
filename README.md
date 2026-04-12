@@ -1,10 +1,21 @@
 # Eco Spark Frontend
 
+## Project Description
+
 Eco Spark is a role-based sustainability innovation platform built with Next.js 16, React 19, TypeScript, TanStack Query, TanStack Form, Zod, Axios, and Tailwind CSS 4.
 
 It supports public discovery, authenticated workspaces, idea moderation, campaign and community flows, and paid idea access through a contract-first frontend architecture.
 
 > Repository note: the package name is currently `eco_spark-backend`, but this repository contains the frontend application.
+
+## Live URLs
+
+No deployed production URLs are committed in this repository right now.
+
+- Frontend: `Not specified`
+- Backend API: `Not specified`
+- Local frontend: `http://localhost:3000`
+- Local backend default: `http://localhost:5000/api/v1`
 
 ## Overview
 
@@ -24,7 +35,7 @@ The platform is split into:
 - Role-based dashboards for members, scientists, and admins
 - An API integration layer that validates both request payloads and backend responses with Zod
 
-## Core Capabilities
+## Features
 
 - Public homepage with editorial sections, live idea showcase, pricing, and conversion flows
 - Public idea catalog with search, pagination, paid/free access behavior, and detail pages
@@ -36,7 +47,7 @@ The platform is split into:
 - Admin dashboard for user management, moderation, featured/archive flows, taxonomy management, reports, and campaigns
 - Commerce integration for checkout session creation, purchases, and transactions
 
-## Tech Stack
+## Technologies Used
 
 | Area | Stack |
 | --- | --- |
@@ -191,7 +202,7 @@ Important notes:
 - The Axios client uses `/api/v1` in the browser and the external URL on the server
 - Even though `src/config/env.ts` defines a fallback, you should still set `NEXT_PUBLIC_API_BASE_URL` explicitly in local and deployed environments so rewrites work correctly
 
-## Local Development
+## Setup Instructions
 
 ### Prerequisites
 
