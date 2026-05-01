@@ -72,7 +72,7 @@ export function HomeHero() {
   }, []);
 
   return (
-    <section className="relative grid gap-8 overflow-hidden border-b border-border bg-card px-4 py-10 sm:px-6 lg:h-[64svh] lg:max-h-[70svh] lg:min-h-[36rem] lg:px-8 lg:py-12">
+    <section className="relative grid gap-8 overflow-hidden border-b border-border bg-card px-4 py-10 sm:px-6 lg:min-h-[calc(100svh-4rem)] lg:px-8 lg:py-12">
       <div
         aria-hidden="true"
         className="home-animated-grid pointer-events-none absolute inset-0 opacity-60 dark:opacity-35"
