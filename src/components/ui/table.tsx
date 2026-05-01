@@ -14,7 +14,7 @@ type TableCaptionProps = React.ComponentProps<"caption">;
 
 function Table({ className, ...props }: TableProps) {
   return (
-    <div className="relative w-full overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="relative w-full overflow-x-auto rounded-lg border border-border bg-card text-card-foreground shadow-sm">
       <table className={cn("w-full caption-bottom text-sm", className)} {...props} />
     </div>
   );
@@ -24,7 +24,7 @@ function TableHeader({ className, ...props }: TableSectionProps) {
   return (
     <thead
       className={cn(
-        "border-b border-slate-200 bg-slate-50/80 [&_tr]:border-0",
+        "border-b border-border bg-muted [&_tr]:border-0",
         className,
       )}
       {...props}
@@ -48,7 +48,7 @@ function TableFooter({ className, ...props }: TableFooterProps) {
   return (
     <tfoot
       className={cn(
-        "border-t border-slate-200 bg-slate-50 font-medium [&>tr]:last:border-b-0",
+        "border-t border-border bg-muted font-medium [&>tr]:last:border-b-0",
         className,
       )}
       {...props}
@@ -60,7 +60,7 @@ function TableRow({ className, ...props }: TableRowProps) {
   return (
     <tr
       className={cn(
-        "border-b border-slate-200 transition-colors hover:bg-slate-50/60",
+        "border-b border-border transition-colors hover:bg-muted/70",
         className,
       )}
       {...props}
@@ -72,7 +72,7 @@ function TableHead({ className, ...props }: TableHeadProps) {
   return (
     <th
       className={cn(
-        "h-11 px-4 text-left align-middle text-xs font-semibold uppercase tracking-[0.16em] text-slate-500",
+        "h-11 px-4 text-left align-middle text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground",
         className,
       )}
       {...props}
@@ -84,7 +84,7 @@ function TableCell({ className, ...props }: TableCellProps) {
   return (
     <td
       className={cn(
-        "px-4 py-3 align-top text-sm text-slate-700",
+        "px-4 py-3 align-top text-sm text-foreground",
         className,
       )}
       {...props}
@@ -95,7 +95,7 @@ function TableCell({ className, ...props }: TableCellProps) {
 function TableCaption({ className, ...props }: TableCaptionProps) {
   return (
     <caption
-      className={cn("px-4 py-3 text-sm text-slate-500", className)}
+      className={cn("px-4 py-3 text-sm text-muted-foreground", className)}
       {...props}
     />
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { type ChangeEvent, type FormEvent, useMemo, useState } from "react";
+import { SmartIdeaFormAssistant } from "@/components/ai";
 import { Button } from "@/components/ui/button";
 import { ErrorState, LoadingState } from "@/components/ui/data-state";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { useCategoriesQuery } from "@/features/category";
 import { useCreateIdeaMutation } from "@/features/idea";
 import { useTagsQuery } from "@/features/tag";
 import { getApiErrorMessage } from "@/lib/errors/api-error";
+import type { AiIdeaFormSuggestion } from "@/services/ai.service";
 import type { Campaign } from "@/services/campaign.service";
 import type { Category } from "@/services/category.service";
 import type { CreateIdeaInput } from "@/services/idea.service";
@@ -185,6 +187,33 @@ function getTagLabel(tag: Tag) {
 
 function getOptionText(label: string, id: string) {
   return label === id ? id : `${label} (${id})`;
+}
+
+function normalizeLookupValue(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function isLooseTextMatch(candidate: string | undefined, suggestion: string) {
+  if (!candidate) {
+    return false;
+  }
+
+  const normalizedCandidate = normalizeLookupValue(candidate);
+  const normalizedSuggestion = normalizeLookupValue(suggestion);
+
+  if (!normalizedCandidate || !normalizedSuggestion) {
+    return false;
+  }
+
+  return (
+    normalizedCandidate === normalizedSuggestion ||
+    normalizedCandidate.includes(normalizedSuggestion) ||
+    normalizedSuggestion.includes(normalizedCandidate)
+  );
 }
 
 type ValidationResult =
@@ -528,6 +557,103 @@ export function CreateIdeaWorkspace() {
     }
   };
 
+  const applyAiSuggestions = (
+    suggestions: AiIdeaFormSuggestion["suggestions"],
+  ) => {
+    const aiTextFields: Array<keyof Pick<
+      CreateIdeaFormValues,
+      | "excerpt"
+      | "description"
+      | "proposedSolution"
+      | "implementationSteps"
+      | "expectedBenefits"
+      | "risksAndChallenges"
+      | "requiredResources"
+    >> = [
+      "excerpt",
+      "description",
+      "proposedSolution",
+      "implementationSteps",
+      "expectedBenefits",
+      "risksAndChallenges",
+      "requiredResources",
+    ];
+
+    let matchedCategoryId = "";
+
+    if (suggestions.suggestedCategoryName) {
+      const matchedCategory = categories.find((category) =>
+        [
+          category.name,
+          category.slug,
+          category.id,
+        ].some((candidate) =>
+          isLooseTextMatch(candidate, suggestions.suggestedCategoryName!),
+        ),
+      );
+      matchedCategoryId = matchedCategory?.id ?? "";
+    }
+
+    setForm((previous) => {
+      const next = { ...previous };
+
+      aiTextFields.forEach((field) => {
+        const value = suggestions[field];
+
+        if (typeof value === "string" && value.trim()) {
+          next[field] = value.trim();
+        }
+      });
+
+      if (matchedCategoryId) {
+        next.categoryId = matchedCategoryId;
+      }
+
+      return next;
+    });
+
+    const suggestedTags = suggestions.suggestedTags ?? [];
+
+    if (!usingManualTags && suggestedTags.length > 0) {
+      const matchedTagIds = tags
+        .filter((tag) =>
+          suggestedTags.some((suggestedTag) =>
+            [tag.name, tag.slug, tag.id].some((candidate) =>
+              isLooseTextMatch(candidate, suggestedTag),
+            ),
+          ),
+        )
+        .map((tag) => tag.id);
+
+      if (matchedTagIds.length > 0) {
+        setSelectedTagIds((previous) => Array.from(new Set([...previous, ...matchedTagIds])));
+      }
+    }
+
+    setErrors((previous) => {
+      const next = { ...previous };
+
+      aiTextFields.forEach((field) => {
+        delete next[field];
+      });
+
+      if (matchedCategoryId) {
+        delete next.categoryId;
+      }
+
+      if (suggestedTags.length > 0) {
+        delete next.tagIds;
+      }
+
+      return next;
+    });
+
+    setFeedback({
+      type: "success",
+      text: "AI suggestions applied. Review the fields before submitting.",
+    });
+  };
+
   const resetForm = () => {
     setForm(initialFormState);
     setErrors({});
@@ -627,6 +753,19 @@ export function CreateIdeaWorkspace() {
           Tags could not be loaded. Enter comma-separated tag IDs manually if needed.
         </p>
       ) : null}
+
+      <SmartIdeaFormAssistant
+        values={{
+          title: form.title,
+          problemStatement: form.problemStatement,
+          proposedSolution: form.proposedSolution,
+          description: form.description,
+          targetAudience: form.targetAudience,
+          categoryId: form.categoryId,
+          tagIds,
+        }}
+        onApply={applyAiSuggestions}
+      />
 
       <form className="space-y-6" onSubmit={onSubmit}>
         <fieldset disabled={createIdeaMutation.isPending} className="space-y-6">

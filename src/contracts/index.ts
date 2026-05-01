@@ -1,4 +1,5 @@
 export * from "./admin-analytics.contract";
+export * from "./ai.contract";
 export * from "./auth.contract";
 export * from "./campaign.contract";
 export * from "./category.contract";

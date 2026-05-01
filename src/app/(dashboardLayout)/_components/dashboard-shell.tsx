@@ -1,6 +1,35 @@
 "use client";
 
-import { type LucideIcon, Archive, Bookmark, ClipboardCheck, Compass, FileText, Flag, FlaskConical, FolderPlus, Home, LayoutDashboard, Lightbulb, LogOut, Megaphone, Menu, MessageSquare, PlusCircle, Send, Settings, Shield, ShoppingCart, Star, ThumbsUp, User, Users, X } from "lucide-react";
+import {
+  type LucideIcon,
+  Archive,
+  Bookmark,
+  ClipboardCheck,
+  Compass,
+  FileText,
+  Flag,
+  FlaskConical,
+  FolderPlus,
+  Home,
+  LayoutDashboard,
+  Lightbulb,
+  LogOut,
+  Megaphone,
+  Menu,
+  MessageSquare,
+  Moon,
+  PlusCircle,
+  Send,
+  Settings,
+  Shield,
+  ShoppingCart,
+  Star,
+  Sun,
+  ThumbsUp,
+  User,
+  Users,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
@@ -15,6 +44,8 @@ type DashboardShellProps = {
   children: ReactNode;
   role: UserRole;
 };
+
+type ThemeMode = "light" | "dark";
 
 const iconMap: Record<string, LucideIcon> = {
   Archive,
@@ -119,16 +150,55 @@ function NavLink({
       href={href}
       onClick={onNavigate}
       className={cn(
-        "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+        "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
         active
-          ? "bg-slate-900 text-white shadow-[0_12px_28px_-20px_rgba(15,23,42,0.75)]"
-          : "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
       aria-current={active ? "page" : undefined}
     >
-      <Icon className={cn("size-4", active ? "text-white" : "text-slate-400 group-hover:text-slate-700")} />
+      <Icon
+        className={cn(
+          "size-4",
+          active
+            ? "text-primary-foreground"
+            : "text-muted-foreground group-hover:text-foreground",
+        )}
+      />
       <span>{label}</span>
     </Link>
+  );
+}
+
+function setDocumentTheme(mode: ThemeMode) {
+  document.documentElement.classList.toggle("dark", mode === "dark");
+  localStorage.setItem("eco-spark-theme", mode);
+}
+
+function DashboardThemeToggle({
+  theme,
+  onToggle,
+}: {
+  theme: ThemeMode;
+  onToggle: () => void;
+}) {
+  const Icon = theme === "dark" ? Sun : Moon;
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      className="gap-2"
+      onClick={onToggle}
+      aria-label={
+        theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+      }
+    >
+      <Icon className="size-4" />
+      <span className="hidden sm:inline">
+        {theme === "dark" ? "Light" : "Dark"}
+      </span>
+    </Button>
   );
 }
 
@@ -136,6 +206,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const logoutMutation = useLogoutMutation();
+  const [theme, setTheme] = useState<ThemeMode>("light");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
 
@@ -146,6 +217,28 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem("eco-spark-theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const initialTheme: ThemeMode =
+      storedTheme === "dark" || storedTheme === "light"
+        ? storedTheme
+        : prefersDark
+          ? "dark"
+          : "light";
+
+    setTheme(initialTheme);
+    document.documentElement.classList.toggle("dark", initialTheme === "dark");
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme((currentTheme) => {
+      const nextTheme = currentTheme === "dark" ? "light" : "dark";
+      setDocumentTheme(nextTheme);
+      return nextTheme;
+    });
+  };
 
   const handleLogout = async () => {
     setLogoutError(null);
@@ -160,33 +253,32 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
   };
 
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.08),transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
-      <div className="pointer-events-none absolute -left-24 top-24 size-72 rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.14),rgba(56,189,248,0)_72%)]" />
-      <div className="pointer-events-none absolute -right-24 bottom-24 size-80 rounded-full bg-[radial-gradient(circle,rgba(34,197,94,0.12),rgba(34,197,94,0)_72%)]" />
-
+    <div className="theme-compat-scope dashboard-theme-scope relative min-h-screen overflow-x-clip bg-background text-foreground">
       {mobileOpen ? (
         <button
           type="button"
           aria-label="Close navigation"
-          className="fixed inset-0 z-30 bg-slate-950/35 lg:hidden"
+          className="fixed inset-0 z-30 bg-foreground/25 backdrop-blur-sm lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       ) : null}
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-slate-200 bg-white/92 px-4 py-5 shadow-xl backdrop-blur-xl transition-transform lg:translate-x-0 lg:shadow-none",
+          "fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-border bg-card px-4 py-5 text-card-foreground shadow-xl backdrop-blur-xl transition-transform lg:translate-x-0 lg:shadow-none",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div className="flex items-center justify-between border-b border-border pb-4">
           <Link href={dashboardHref} className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white">
+            <div className="flex size-11 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
               ES
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-950">Eco Spark</p>
-              <p className="text-xs text-slate-500">{formatRoleLabel(role)} workspace</p>
+              <p className="text-sm font-semibold text-foreground">Eco Spark</p>
+              <p className="text-xs text-muted-foreground">
+                {formatRoleLabel(role)} workspace
+              </p>
             </div>
           </Link>
 
@@ -205,7 +297,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
           {navSections.map((section, index) => (
             <section key={`${section.title ?? "general"}-${index}`} className="space-y-2">
               {section.title ? (
-                <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                   {section.title}
                 </p>
               ) : null}
@@ -226,14 +318,18 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
           ))}
         </nav>
 
-        <div className="space-y-3 border-t border-slate-200 pt-4">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Signed in as</p>
-            <p className="mt-2 text-sm font-semibold text-slate-950">{formatRoleLabel(role)}</p>
+        <div className="space-y-3 border-t border-border pt-4">
+          <div className="rounded-lg border border-border bg-muted px-3 py-3">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Signed in as
+            </p>
+            <p className="mt-2 text-sm font-semibold text-foreground">
+              {formatRoleLabel(role)}
+            </p>
           </div>
 
           {logoutError ? (
-            <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {logoutError}
             </p>
           ) : null}
@@ -252,7 +348,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
       </aside>
 
       <div className="relative min-h-screen lg:pl-72">
-        <header className="sticky top-0 z-20 border-b border-white/60 bg-white/80 backdrop-blur-xl">
+        <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur-xl">
           <div className="flex min-h-16 items-center justify-between gap-4 px-4 py-3 md:px-6">
             <div className="flex items-center gap-3">
               <Button
@@ -266,21 +362,24 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
               </Button>
 
               <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
                   {currentPage.sectionTitle}
                 </p>
-                <h1 className="text-lg font-semibold text-slate-950">{currentPage.title}</h1>
+                <h1 className="text-lg font-semibold text-foreground">
+                  {currentPage.title}
+                </h1>
               </div>
             </div>
 
-            <div className="hidden items-center gap-3 md:flex">
+            <div className="flex items-center gap-3">
+              <DashboardThemeToggle theme={theme} onToggle={toggleTheme} />
               <Link
                 href={dashboardHref}
-                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950"
+                className="hidden rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:inline-flex"
               >
                 Dashboard home
               </Link>
-              <div className="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-white">
+              <div className="hidden rounded-md bg-primary px-3 py-2 text-xs font-medium uppercase tracking-[0.16em] text-primary-foreground md:block">
                 {formatRoleLabel(role)}
               </div>
             </div>
@@ -288,7 +387,7 @@ export function DashboardShell({ children, role }: DashboardShellProps) {
         </header>
 
         <main className="relative min-h-[calc(100vh-4rem)] px-4 py-4 md:px-6 md:py-6">
-          <div className="pointer-events-none absolute left-4 right-4 top-4 h-28 rounded-3xl bg-[radial-gradient(circle_at_15%_0%,rgba(56,189,248,0.16),rgba(56,189,248,0)_70%)] md:left-6 md:right-6 md:top-6" />
+          <div className="pointer-events-none absolute left-4 right-4 top-4 h-28 rounded-lg bg-secondary/25 md:left-6 md:right-6 md:top-6" />
           <div className="relative">{children}</div>
         </main>
       </div>

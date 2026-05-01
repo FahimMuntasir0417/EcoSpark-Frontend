@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Plus_Jakarta_Sans, Sora } from "next/font/google";
+import { ChatbotWidget } from "@/components/ai";
 import { QueryProvider } from "@/providers/query-provider";
 import { cn } from "@/lib/utils";
 import "./globals.css";
@@ -46,7 +47,10 @@ export default function RootLayout({
         suppressHydrationWarning
         className="min-h-full flex flex-col overflow-x-clip bg-background text-foreground"
       >
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          {children}
+          <ChatbotWidget />
+        </QueryProvider>
       </body>
     </html>
   );

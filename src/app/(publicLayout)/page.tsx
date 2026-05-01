@@ -1,538 +1,808 @@
 import {
   ArrowRight,
+  BarChart3,
   CheckCircle2,
+  ClipboardCheck,
+  Compass,
+  DatabaseZap,
+  FileCheck2,
   FlaskConical,
-  Quote,
+  KeyRound,
+  Lightbulb,
+  LockKeyhole,
+  Megaphone,
+  MessageSquare,
+  Server,
   ShieldCheck,
-  Sparkles,
+  ShoppingCart,
+  Tags,
   UsersRound,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { HomeHero } from "./_components/home-hero";
 import { HomeIdeasShowcase } from "./_components/home-ideas-showcase";
 
-const featureCards = [
+type IconCard = {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+};
+
+type RouteItem = {
+  label: string;
+  href: string;
+  detail: string;
+};
+
+const publicRouteItems: RouteItem[] = [
+  { label: "Home", href: "/", detail: "Public landing page" },
+  { label: "Ideas", href: "/idea", detail: "Public idea catalog" },
+  { label: "Campaigns", href: "/campaigns", detail: "Campaign directory" },
+  { label: "Scientists", href: "/scientist", detail: "Scientist directory" },
+  { label: "Community", href: "/community", detail: "Experience reports" },
+  { label: "Plans", href: "/subscription-plan", detail: "Subscription plans" },
+  { label: "About", href: "/about", detail: "Platform overview" },
+  { label: "Contact", href: "/contact", detail: "Validated contact request" },
+  { label: "Support", href: "/support", detail: "Setup and route support" },
+  { label: "Privacy", href: "/privacy", detail: "Frontend privacy notes" },
+  { label: "Terms", href: "/terms", detail: "Platform terms" },
+];
+
+const authRouteItems: RouteItem[] = [
+  { label: "Login", href: "/login", detail: "Authenticated entry" },
+  { label: "Register", href: "/register", detail: "Account creation" },
+  { label: "Verify email", href: "/verify-email", detail: "Email verification" },
   {
-    title: "Scientist-grade submission flow",
+    label: "Forgot password",
+    href: "/forgot-password",
+    detail: "Recovery request",
+  },
+  {
+    label: "Reset password",
+    href: "/reset-password",
+    detail: "Password reset flow",
+  },
+];
+
+const commonProtectedRoutes: RouteItem[] = [
+  { label: "My profile", href: "/my-profile", detail: "Profile management" },
+  { label: "Change password", href: "/change-password", detail: "Security" },
+  { label: "Saved ideas", href: "/saved-ideas", detail: "Saved records" },
+  { label: "My purchases", href: "/my-purchases", detail: "Purchase history" },
+  { label: "My comments", href: "/my-comment", detail: "Comment activity" },
+  { label: "My votes", href: "/my-vote", detail: "Voting activity" },
+  { label: "Purchase idea", href: "/purches-idea", detail: "Legacy route" },
+];
+
+const memberWorkspaceRoutes: RouteItem[] = [
+  { label: "Member dashboard", href: "/dashboard", detail: "Overview" },
+  {
+    label: "Browse ideas",
+    href: "/dashboard/browse-ideas",
+    detail: "Member idea browsing",
+  },
+  {
+    label: "Idea report",
+    href: "/dashboard/idea-report",
+    detail: "Create reports",
+  },
+  {
+    label: "All idea reports",
+    href: "/dashboard/al-idea-report",
+    detail: "Report directory",
+  },
+  {
+    label: "Arrange campaigns",
+    href: "/dashboard/arrange-campaigns",
+    detail: "Campaign workspace",
+  },
+  {
+    label: "Purchased idea",
+    href: "/dashboard/purches-idea",
+    detail: "Legacy purchase route",
+  },
+];
+
+const scientistWorkspaceRoutes: RouteItem[] = [
+  {
+    label: "Scientist dashboard",
+    href: "/scientist/dashboard",
+    detail: "Overview",
+  },
+  {
+    label: "My ideas",
+    href: "/scientist/dashboard/my-ideas",
+    detail: "Idea management",
+  },
+  {
+    label: "Create idea",
+    href: "/scientist/dashboard/create-idea",
+    detail: "Submission workspace",
+  },
+  {
+    label: "Idea attachments",
+    href: "/scientist/dashboard/idea-attachments",
+    detail: "Attachment records",
+  },
+  {
+    label: "Draft ideas",
+    href: "/scientist/dashboard/draft-ideas",
+    detail: "Draft records",
+  },
+  {
+    label: "Submitted ideas",
+    href: "/scientist/dashboard/submitted-ideas",
+    detail: "Submitted records",
+  },
+];
+
+const adminWorkspaceRoutes: RouteItem[] = [
+  { label: "Admin dashboard", href: "/admin/dashboard", detail: "Overview" },
+  {
+    label: "Ideas management",
+    href: "/admin/dashboard/ideas-management",
+    detail: "Idea operations",
+  },
+  {
+    label: "Pending review",
+    href: "/admin/dashboard/pending-review",
+    detail: "Review queue",
+  },
+  {
+    label: "Featured ideas",
+    href: "/admin/dashboard/featured-ideas",
+    detail: "Featured queue",
+  },
+  {
+    label: "Archived ideas",
+    href: "/admin/dashboard/archived-ideas",
+    detail: "Archive queue",
+  },
+  {
+    label: "Idea categories",
+    href: "/admin/dashboard/create-idea-category",
+    detail: "Category management",
+  },
+  {
+    label: "Tag management",
+    href: "/admin/dashboard/tag-management",
+    detail: "Tag management",
+  },
+  {
+    label: "Specialties",
+    href: "/admin/dashboard/specialty-management",
+    detail: "Specialty management",
+  },
+  {
+    label: "Admins",
+    href: "/admin/dashboard/admins-management",
+    detail: "Admin accounts",
+  },
+  {
+    label: "Members",
+    href: "/admin/dashboard/members-management",
+    detail: "Member accounts",
+  },
+  {
+    label: "Scientists",
+    href: "/admin/dashboard/scientists-management",
+    detail: "Scientist accounts",
+  },
+  {
+    label: "Idea reports",
+    href: "/admin/dashboard/al-idea-report",
+    detail: "Report moderation",
+  },
+  {
+    label: "Arrange campaigns",
+    href: "/admin/dashboard/arrange-campaigns",
+    detail: "Campaign operations",
+  },
+];
+
+const serviceDomains = [
+  "auth",
+  "idea",
+  "campaign",
+  "category",
+  "tag",
+  "specialty",
+  "commerce",
+  "community",
+  "scientist",
+  "interaction",
+  "moderation",
+  "user",
+  "admin-analytics",
+  "member-analytics",
+  "scientist-analytics",
+];
+
+const platformMetrics = [
+  {
+    value: publicRouteItems.length.toString(),
+    label: "public routes",
+    detail: "Clickable public pages in the current frontend",
+  },
+  {
+    value: authRouteItems.length.toString(),
+    label: "auth routes",
+    detail: "Login, registration, verification, and recovery flows",
+  },
+  {
+    value: (
+      commonProtectedRoutes.length +
+      memberWorkspaceRoutes.length +
+      scientistWorkspaceRoutes.length +
+      adminWorkspaceRoutes.length
+    ).toString(),
+    label: "protected routes",
+    detail: "Common, member, scientist, and admin workspaces",
+  },
+  {
+    value: serviceDomains.length.toString(),
+    label: "service domains",
+    detail: "Feature hooks, service modules, and contracts by domain",
+  },
+];
+
+const roleWorkspaceGroups = [
+  {
+    title: "Member workspace",
     description:
-      "Capture context-rich proposals with category, impact, feasibility, and resource details in one guided workflow.",
+      "Browse ideas, create reports, review purchases, votes, comments, saved ideas, and profile data.",
+    icon: UsersRound,
+    routes: memberWorkspaceRoutes,
+  },
+  {
+    title: "Scientist workspace",
+    description:
+      "Create ideas, manage drafts, attach supporting files, and track submitted ideas.",
+    icon: FlaskConical,
+    routes: scientistWorkspaceRoutes,
+  },
+  {
+    title: "Admin workspace",
+    description:
+      "Manage ideas, reports, users, campaigns, tags, categories, specialties, and review queues.",
+    icon: ShieldCheck,
+    routes: adminWorkspaceRoutes,
+  },
+];
+
+const productSurfaces: IconCard[] = [
+  {
+    title: "Idea catalog and detail pages",
+    description:
+      "The `/idea` and `/idea/[id]` routes use the idea service for published ideas, pricing, metrics, and detail views.",
+    icon: Lightbulb,
+  },
+  {
+    title: "Campaign directory",
+    description:
+      "The `/campaigns` routes expose campaign records and connect voting activity to protected account flows.",
+    icon: Megaphone,
+  },
+  {
+    title: "Scientist directory",
+    description:
+      "The `/scientist` route presents scientist records from the scientist service and profile-related fields.",
     icon: FlaskConical,
   },
   {
-    title: "Transparent moderation pipeline",
+    title: "Community reports",
     description:
-      "Review, approve, reject, archive, and feature ideas through a structured admin control center with full visibility.",
-    icon: ShieldCheck,
-  },
-  {
-    title: "Member discovery and adoption",
-    description:
-      "Enable members to discover ideas, compare impact, and move toward implementation through saves, votes, and purchases.",
-    icon: UsersRound,
+      "The `/community` route presents experience reports that connect member feedback to idea adoption.",
+    icon: MessageSquare,
   },
 ];
 
 const workflowSteps = [
   {
-    label: "Submit",
-    detail: "Scientists propose ideas with implementation and impact context.",
+    title: "Discover",
+    description:
+      "Public users review ideas, scientists, campaigns, and community reports before signing in.",
   },
   {
-    label: "Moderate",
-    detail:
-      "Admins validate quality and route the strongest proposals forward.",
+    title: "Register or login",
+    description:
+      "Auth routes handle registration, email verification, login, password recovery, and reset.",
   },
   {
-    label: "Prioritize",
-    detail: "Teams compare measurable value across shortlisted opportunities.",
+    title: "Submit",
+    description:
+      "Scientists create structured idea records with category, impact, access, attachments, and status data.",
   },
   {
-    label: "Adopt",
-    detail: "Members engage, pilot, and scale approved sustainability ideas.",
+    title: "Moderate",
+    description:
+      "Admins review ideas, manage statuses, feature records, archive items, and moderate reports.",
+  },
+  {
+    title: "Adopt",
+    description:
+      "Members save, vote, comment, purchase, and track ideas through protected account routes.",
   },
 ];
 
-const inspirationPanels = [
+const commerceItems: IconCard[] = [
   {
-    eyebrow: "Urban Retrofit",
-    title:
-      "Solar rooftops that turn dense neighborhoods into active energy surfaces.",
+    title: "Purchase access",
     description:
-      "A visual section fed by online-hosted imagery to make the landing page feel more editorial and contemporary.",
-    stat: "City-scale renewable momentum",
-    imageUrl:
-      "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1200&q=80",
+      "Commerce hooks and services support checkout session creation for paid idea access.",
+    icon: ShoppingCart,
   },
   {
-    eyebrow: "Circular Systems",
-    title:
-      "Facilities designed around reuse, efficiency, and cleaner operational loops.",
+    title: "Payment success route",
     description:
-      "Use it as a visual break between workflow content and the live idea feed without changing backend data.",
-    stat: "Operational resilience in view",
-    imageUrl:
-      "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=1200&q=80",
+      "The `/payments/success` route resolves successful checkout state and links users back to purchases.",
+    icon: CheckCircle2,
   },
   {
-    eyebrow: "Landscape Recovery",
-    title:
-      "Nature-forward imagery that keeps the page anchored in long-term environmental outcomes.",
+    title: "My purchases",
     description:
-      "The section is decorative, but it still supports the platform story: credible ideas with real-world impact.",
-    stat: "Environmental outcomes made visible",
-    imageUrl:
-      "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?auto=format&fit=crop&w=1200&q=80",
+      "Protected purchase routes show member purchase records from the commerce service.",
+    icon: FileCheck2,
   },
 ];
 
-const testimonials = [
+const architectureItems: IconCard[] = [
   {
-    quote:
-      "Our review cycle dropped from weeks to days because every idea came in structured and ready to evaluate.",
-    name: "Amina Rahman",
-    role: "Program Lead, GreenLab Network",
+    title: "Contract-first API layer",
+    description:
+      "Request payloads and backend responses are validated with Zod contracts before UI state depends on them.",
+    icon: FileCheck2,
   },
   {
-    quote:
-      "The visibility from draft to featured helped us prioritize high-impact proposals without losing good experiments.",
-    name: "Michael Reyes",
-    role: "Innovation Manager, Urban Climate Hub",
+    title: "TanStack Query hooks",
+    description:
+      "Feature hooks wrap loading, error, retry, stale data, and mutation behavior for each domain.",
+    icon: DatabaseZap,
   },
   {
-    quote:
-      "We now align scientists, administrators, and members around one decision framework.",
-    name: "Nadia Karim",
-    role: "Operations Director, Eco Futures Collective",
+    title: "Axios service modules",
+    description:
+      "Service files call the backend through the shared HTTP client and `/api/v1` rewrite path.",
+    icon: Server,
+  },
+  {
+    title: "Typed analytics modules",
+    description:
+      "Admin, member, and scientist analytics services feed dashboard overview pages.",
+    icon: BarChart3,
   },
 ];
 
-const pricingPlans = [
+const governanceItems: IconCard[] = [
   {
-    name: "Starter",
-    price: "$0",
-    subtitle: "For early pilots",
-    label: "Entry plan",
-    note: "Test the public idea library and submission workflow with minimal friction.",
-    highlights: [
-      "Public idea browsing",
-      "Basic profile and submissions",
-      "Community feedback access",
-    ],
-    ctaLabel: "Start free",
-    ctaHref: "/subscription-plan",
+    title: "Role defaults",
+    description:
+      "Members, scientists, admins, and super admins land on the correct dashboard after authentication.",
+    icon: Compass,
   },
   {
-    name: "Growth",
-    price: "$29",
-    subtitle: "Per member/month",
-    label: "Most popular",
-    note: "Built for active teams that need faster moderation, prioritization, and reporting.",
-    highlights: [
-      "Advanced moderation workspace",
-      "Priority listing controls",
-      "Role-specific analytics",
-    ],
-    ctaLabel: "Choose growth",
-    ctaHref: "/subscription-plan",
-    featured: true,
+    title: "Protected routing",
+    description:
+      "Proxy and server layouts guard protected member, scientist, admin, and common account routes.",
+    icon: LockKeyhole,
   },
   {
-    name: "Enterprise",
-    price: "Custom",
-    subtitle: "For large organizations",
-    label: "Tailored rollout",
-    note: "Designed for organizations that need onboarding, policy controls, and hands-on support.",
-    highlights: [
-      "Dedicated onboarding",
-      "Policy and workflow customization",
-      "Priority support and training",
-    ],
-    ctaLabel: "Contact sales",
-    ctaHref: "/subscription-plan",
+    title: "Typed failures",
+    description:
+      "Shared API error helpers normalize network, validation, and backend errors into user feedback.",
+    icon: ClipboardCheck,
+  },
+  {
+    title: "Token refresh",
+    description:
+      "The HTTP client injects access tokens and attempts refresh behavior when requests return unauthorized responses.",
+    icon: KeyRound,
   },
 ];
+
+const taxonomyItems: IconCard[] = [
+  {
+    title: "Idea categories",
+    description:
+      "Admins maintain categories through `/admin/dashboard/create-idea-category` for idea filtering and organization.",
+    icon: Tags,
+  },
+  {
+    title: "Idea tags",
+    description:
+      "The tag management route supports idea metadata used across admin and scientist workflows.",
+    icon: Tags,
+  },
+  {
+    title: "Scientist specialties",
+    description:
+      "Specialty management supports scientist profiles and search-friendly expertise records.",
+    icon: FlaskConical,
+  },
+];
+
+const stackItems = [
+  "Next.js 16 App Router",
+  "React 19 Server and Client Components",
+  "Tailwind CSS 4 design tokens",
+  "TanStack Query data orchestration",
+  "TanStack Form and Zod validation",
+  "Axios service modules",
+  "Lucide icon system",
+  "Role-based proxy protection",
+];
+
+const faqs = [
+  {
+    question: "What project data does this homepage use?",
+    answer:
+      "The sections are based on actual Eco Spark routes, dashboard groups, service domains, auth flows, README architecture, and the live idea query hook.",
+  },
+  {
+    question: "Which roles are represented?",
+    answer:
+      "The homepage describes member, scientist, admin, and super admin behavior through the real dashboard routes and role defaults.",
+  },
+  {
+    question: "Where does live data appear?",
+    answer:
+      "The live idea showcase uses the existing `useIdeasQuery` hook and the idea service instead of static idea records.",
+  },
+  {
+    question: "How is the backend connected?",
+    answer:
+      "The app rewrites `/api/v1` requests to `NEXT_PUBLIC_API_BASE_URL`, and service modules validate responses with Zod contracts.",
+  },
+];
+
+function SectionHeading({
+  kicker,
+  title,
+  description,
+}: {
+  kicker: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="grid gap-2">
+      <p className="section-kicker">{kicker}</p>
+      <h2 className="section-title">{title}</h2>
+      <p className="section-copy">{description}</p>
+    </div>
+  );
+}
+
+function StandardCard({ item }: { item: IconCard }) {
+  return (
+    <article className="surface-card grid h-full gap-4 p-5">
+      <span className="flex size-10 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+        <item.icon className="size-5" />
+      </span>
+      <div>
+        <h3 className="text-lg font-semibold">{item.title}</h3>
+        <p className="mt-2 text-sm leading-7 text-muted-foreground">
+          {item.description}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+function RouteCard({ route }: { route: RouteItem }) {
+  return (
+    <Link
+      href={route.href}
+      className="surface-card flex h-full items-center justify-between gap-4 p-4 transition-colors hover:bg-muted"
+    >
+      <span>
+        <span className="block text-sm font-semibold">{route.label}</span>
+        <span className="mt-1 block text-xs text-muted-foreground">
+          {route.detail}
+        </span>
+      </span>
+      <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+    </Link>
+  );
+}
+
+function RoutePill({ route }: { route: RouteItem }) {
+  return (
+    <Link
+      href={route.href}
+      className="rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+    >
+      {route.label}
+    </Link>
+  );
+}
+
+function HomePageBackground() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+    >
+      <div className="home-page-grid absolute inset-0 opacity-[0.55] dark:opacity-[0.35]" />
+      <div className="home-page-lanes absolute inset-x-0 top-0 h-[52rem] opacity-[0.7] dark:opacity-50" />
+      <div className="home-page-sweep absolute inset-y-0 left-0 w-1/2 opacity-[0.7] dark:opacity-[0.45]" />
+      <div className="home-page-fade absolute inset-0" />
+    </div>
+  );
+}
 
 export default function Home() {
   return (
-    <main className="public-page-shell gap-12 py-12 lg:py-20">
-      <section className="relative overflow-hidden rounded-[2rem] border border-slate-200/90 bg-[linear-gradient(160deg,rgba(255,255,255,0.97),rgba(248,250,252,0.95))] p-8 shadow-[0_26px_70px_-42px_rgba(15,23,42,0.38)] lg:p-12">
-        <div className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-[radial-gradient(circle,rgba(14,165,233,0.18),rgba(14,165,233,0)_70%)]" />
-        <div className="pointer-events-none absolute -left-20 bottom-0 size-64 rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.14),rgba(16,185,129,0)_70%)]" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(14,165,233,0.85),rgba(16,185,129,0.85),transparent)]" />
+    <div className="relative isolate overflow-hidden bg-background">
+      <HomePageBackground />
+      <HomeHero />
 
-        <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          <div className="space-y-6">
-            <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
-              <Sparkles className="size-3.5" />
-              Eco Spark Platform
-            </span>
-
-            <div className="space-y-4">
-              <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                Build a structured pipeline for sustainability innovation.
-              </h1>
-              <p className="max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-                Eco Spark helps scientists, administrators, and members move
-                ideas from concept to implementation with clear workflows and
-                measurable impact.
+      <main className="public-page-shell relative z-10">
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {platformMetrics.map((metric) => (
+            <article key={metric.label} className="surface-card p-5">
+              <p className="text-4xl font-semibold tracking-tight text-primary">
+                {metric.value}
               </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/idea"
-                className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white shadow-[0_10px_25px_-16px_rgba(15,23,42,0.8)] transition-colors hover:bg-slate-800"
-              >
-                Explore ideas
-                <ArrowRight className="size-4" />
-              </Link>
-              <Link
-                href="/register"
-                className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-950"
-              >
-                Create account
-              </Link>
-            </div>
-          </div>
-
-          <aside className="grid gap-3 rounded-[1.6rem] border border-slate-700 bg-[linear-gradient(155deg,#020617_0%,#0f172a_50%,#1e293b_100%)] p-5 text-white shadow-[0_22px_45px_-28px_rgba(2,6,23,0.95)]">
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-300">
-                Active ideas
+              <p className="mt-3 text-sm font-semibold uppercase tracking-[0.14em]">
+                {metric.label}
               </p>
-              <p className="mt-2 text-2xl font-semibold">120+</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-300">
-                Review speed
-              </p>
-              <p className="mt-2 text-2xl font-semibold">3.4x faster</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-300">
-                Teams onboarded
-              </p>
-              <p className="mt-2 text-2xl font-semibold">40+</p>
-            </div>
-          </aside>
-        </div>
-      </section>
-
-      <section className="space-y-5">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Feature Section
-          </p>
-          <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
-            Built for every role in the innovation lifecycle.
-          </h2>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          {featureCards.map((feature) => (
-            <article
-              key={feature.title}
-              className="rounded-3xl border border-slate-200 bg-[linear-gradient(165deg,#ffffff_0%,#f8fafc_100%)] p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <div className="inline-flex size-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-800">
-                <feature.icon className="size-5" />
-              </div>
-              <p className="mt-4 text-base font-semibold text-slate-950">
-                {feature.title}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                {feature.description}
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {metric.detail}
               </p>
             </article>
           ))}
-        </div>
-      </section>
+        </section>
 
-      <section className="rounded-[1.8rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Process
-          </p>
-          <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
-            A clear path from concept to adoption.
-          </h2>
-        </div>
-
-        <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {workflowSteps.map((step, index) => (
-            <article
-              key={step.label}
-              className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-            >
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Step {index + 1}
-              </p>
-              <p className="mt-2 text-lg font-semibold text-slate-950">
-                {step.label}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                {step.detail}
-              </p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,#082f49_0%,#0f172a_38%,#052e16_100%)] p-6 text-white shadow-[0_24px_70px_-42px_rgba(2,6,23,0.85)] sm:p-8">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(125,211,252,0.8),rgba(134,239,172,0.8),transparent)]" />
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">
-              Visual Section
-            </p>
-            <h2 className="max-w-3xl text-3xl font-semibold tracking-tight">
-              An editorial section with online-hosted imagery for a stronger
-              first impression.
-            </h2>
-            <p className="max-w-3xl text-sm leading-7 text-slate-200 sm:text-base">
-              This block adds a more polished visual layer to the homepage while
-              keeping the rest of the content grounded in your existing platform
-              story.
-            </p>
+        <section className="grid gap-5">
+          <SectionHeading
+            kicker="Public Routes"
+            title="Every public home section points to a real route."
+            description="These links are the actual public pages available in this frontend, including the newly added company, support, and legal pages."
+          />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {publicRouteItems.map((route) => (
+              <RouteCard key={route.href} route={route} />
+            ))}
           </div>
+        </section>
 
+        <section className="grid gap-5">
+          <SectionHeading
+            kicker="Auth Flows"
+            title="Authentication and recovery are shown as first-class flows."
+            description="The project includes registration, email verification, login, forgot password, and reset password routes."
+          />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {authRouteItems.map((route) => (
+              <RouteCard key={route.href} route={route} />
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-5">
+          <SectionHeading
+            kicker="Role Workspaces"
+            title="Member, scientist, and admin routes are mapped from the app."
+            description="These dashboard groups reflect the protected route folders and role defaults already present in the project."
+          />
           <div className="grid gap-4 lg:grid-cols-3">
-            {inspirationPanels.map((panel) => (
-              <article
-                key={panel.title}
-                className="group relative min-h-[22rem] overflow-hidden rounded-[1.7rem] border border-white/10 bg-slate-950"
-              >
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0 bg-cover bg-center transition duration-500 group-hover:scale-105"
-                  style={{ backgroundImage: `url(${panel.imageUrl})` }}
-                />
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.18),rgba(15,23,42,0.82)_55%,rgba(2,6,23,0.96)_100%)]" />
-
-                <div className="relative flex h-full flex-col justify-between p-5">
-                  <div className="inline-flex w-fit rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-100 backdrop-blur-sm">
-                    {panel.eyebrow}
-                  </div>
-
-                  <div className="space-y-3">
-                    <p className="inline-flex w-fit rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-medium text-emerald-100">
-                      {panel.stat}
-                    </p>
-                    <h3 className="text-2xl font-semibold leading-tight">
-                      {panel.title}
-                    </h3>
-                    <p className="text-sm leading-6 text-slate-200">
-                      {panel.description}
-                    </p>
-                  </div>
+            {roleWorkspaceGroups.map((group) => (
+              <article key={group.title} className="surface-card p-5">
+                <span className="flex size-10 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                  <group.icon className="size-5" />
+                </span>
+                <h3 className="mt-4 text-lg font-semibold">{group.title}</h3>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                  {group.description}
+                </p>
+                <p className="mt-4 text-sm font-semibold text-primary">
+                  {group.routes.length} routes
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {group.routes.slice(0, 6).map((route) => (
+                    <RoutePill key={route.href} route={route} />
+                  ))}
                 </div>
               </article>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="space-y-5">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Testimonials
-          </p>
-          <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
-            Trusted by teams delivering measurable outcomes.
-          </h2>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          {testimonials.map((testimonial) => (
-            <article
-              key={testimonial.name}
-              className="relative rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-            >
-              <Quote className="absolute right-5 top-5 size-5 text-slate-200" />
-              <p className="text-sm leading-7 text-slate-700">
-                "{testimonial.quote}"
-              </p>
-              <p className="mt-5 text-sm font-semibold text-slate-950">
-                {testimonial.name}
-              </p>
-              <p className="text-xs uppercase tracking-[0.12em] text-slate-500">
-                {testimonial.role}
-              </p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <HomeIdeasShowcase />
-
-      <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-[linear-gradient(145deg,#ffffff_0%,#f8fbff_45%,#f8fafc_100%)] p-6 shadow-[0_28px_80px_-50px_rgba(15,23,42,0.38)] sm:p-8">
-        <div className="pointer-events-none absolute -right-20 top-0 size-60 rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.14),rgba(56,189,248,0)_72%)]" />
-        <div className="pointer-events-none absolute -left-20 bottom-0 size-60 rounded-full bg-[radial-gradient(circle,rgba(74,222,128,0.12),rgba(74,222,128,0)_72%)]" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(56,189,248,0.8),rgba(74,222,128,0.75),transparent)]" />
-
-        <div className="relative space-y-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                Pricing
-              </p>
-              <h2 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                Plans that scale with your organization.
-              </h2>
-              <p className="max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-                Start lean, move into team operations, or roll out a tailored
-                workspace with governance and onboarding.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-              <span className="rounded-full border border-white/80 bg-white/85 px-3 py-2 shadow-[0_14px_32px_-26px_rgba(15,23,42,0.28)] backdrop-blur">
-                Transparent plan structure
-              </span>
-              <span className="rounded-full border border-white/80 bg-white/85 px-3 py-2 shadow-[0_14px_32px_-26px_rgba(15,23,42,0.28)] backdrop-blur">
-                Flexible team growth
-              </span>
-            </div>
+        <section className="grid gap-5">
+          <SectionHeading
+            kicker="Common Protected Routes"
+            title="Account activity routes come from real protected pages."
+            description="These common protected routes are shared across authenticated roles for profile, security, purchases, saves, votes, and comments."
+          />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {commonProtectedRoutes.map((route) => (
+              <RouteCard key={route.href} route={route} />
+            ))}
           </div>
+        </section>
 
-          <div className="grid gap-4 xl:grid-cols-3">
-            {pricingPlans.map((plan) => (
-              <article
-                key={plan.name}
-                className={`relative overflow-hidden rounded-[1.8rem] border p-6 shadow-[0_22px_60px_-42px_rgba(15,23,42,0.35)] transition-transform duration-200 hover:-translate-y-1 ${
-                  plan.featured
-                    ? "border-slate-950 bg-[linear-gradient(165deg,#020617_0%,#0f172a_62%,#111827_100%)] text-white"
-                    : "border-slate-200 bg-white/95 text-slate-900"
-                }`}
-              >
-                {plan.featured ? (
-                  <>
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-[linear-gradient(90deg,#22d3ee,#38bdf8,#4ade80)]" />
-                    <div className="pointer-events-none absolute -right-16 top-10 size-36 rounded-full bg-[radial-gradient(circle,rgba(34,211,238,0.18),rgba(34,211,238,0)_72%)]" />
-                  </>
-                ) : (
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.45),transparent)]" />
-                )}
+        <section className="grid gap-5">
+          <SectionHeading
+            kicker="Product Surface"
+            title="Public discovery matches the existing feature pages."
+            description="Ideas, campaigns, scientists, and community reports are the core public browsing areas already implemented in the app."
+          />
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {productSurfaces.map((item) => (
+              <StandardCard key={item.title} item={item} />
+            ))}
+          </div>
+        </section>
 
-                <div className="relative flex h-full flex-col">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <p
-                          className={`text-xs font-semibold uppercase tracking-[0.18em] ${plan.featured ? "text-slate-300" : "text-slate-500"}`}
-                        >
-                          {plan.name}
-                        </p>
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${
-                            plan.featured
-                              ? "border-cyan-300/25 bg-cyan-300/10 text-cyan-200"
-                              : "border-slate-200 bg-slate-50 text-slate-700"
-                          }`}
-                        >
-                          {plan.label}
-                        </span>
-                      </div>
-
-                      <div>
-                        <p className="text-4xl font-semibold tracking-tight">
-                          {plan.price}
-                        </p>
-                        <p
-                          className={`mt-2 text-sm ${plan.featured ? "text-slate-300" : "text-slate-600"}`}
-                        >
-                          {plan.subtitle}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`mt-5 rounded-[1.35rem] border p-4 ${
-                      plan.featured
-                        ? "border-white/10 bg-white/5 text-slate-200"
-                        : "border-slate-200 bg-slate-50/85 text-slate-600"
-                    }`}
-                  >
-                    <p className="text-sm leading-6">{plan.note}</p>
-                  </div>
-
-                  <ul className="mt-6 space-y-3">
-                    {plan.highlights.map((highlight) => (
-                      <li
-                        key={highlight}
-                        className="flex items-start gap-3 text-sm"
-                      >
-                        <span
-                          className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full border ${
-                            plan.featured
-                              ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-200"
-                              : "border-emerald-200 bg-emerald-50 text-emerald-600"
-                          }`}
-                        >
-                          <CheckCircle2 className="size-3.5" />
-                        </span>
-                        <span
-                          className={
-                            plan.featured ? "text-slate-100" : "text-slate-700"
-                          }
-                        >
-                          {highlight}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div className="mt-6 border-t border-slate-200/15 pt-5">
-                    <Link
-                      href={plan.ctaHref}
-                      className={`inline-flex w-full items-center justify-center rounded-full px-4 py-3 text-sm font-medium transition-all ${
-                        plan.featured
-                          ? "bg-white text-slate-950 hover:bg-slate-100 hover:shadow-[0_18px_34px_-24px_rgba(255,255,255,0.45)]"
-                          : "bg-slate-950 text-white hover:bg-slate-800 hover:shadow-[0_18px_34px_-24px_rgba(15,23,42,0.45)]"
-                      }`}
-                    >
-                      {plan.ctaLabel}
-                    </Link>
-                  </div>
-                </div>
+        <section className="surface-card grid gap-6 p-6 lg:p-8">
+          <SectionHeading
+            kicker="Workflow"
+            title="The product lifecycle follows the real role model."
+            description="The lifecycle starts in public discovery and continues through auth, scientist submission, admin moderation, and member adoption."
+          />
+          <div className="grid gap-4 lg:grid-cols-5">
+            {workflowSteps.map((step, index) => (
+              <article key={step.title} className="surface-muted p-5">
+                <span className="flex size-9 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
+                  {index + 1}
+                </span>
+                <h3 className="mt-4 text-lg font-semibold">{step.title}</h3>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                  {step.description}
+                </p>
               </article>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_40%,#0ea5e9_100%)] p-8 text-white shadow-[0_20px_60px_-36px_rgba(2,6,23,0.8)] lg:p-10">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="max-w-2xl space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">
-              Call to action
+        <section className="grid gap-5">
+          <SectionHeading
+            kicker="Commerce"
+            title="Paid idea access is covered by existing routes and services."
+            description="Commerce content references the real checkout, purchase, and payment-success surfaces already present in the project."
+          />
+          <div className="grid gap-4 lg:grid-cols-3">
+            {commerceItems.map((item) => (
+              <StandardCard key={item.title} item={item} />
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-5">
+          <SectionHeading
+            kicker="Taxonomy"
+            title="Admin taxonomy tools are part of the home story."
+            description="Categories, tags, and specialties are real admin-managed records used by ideas and scientist profiles."
+          />
+          <div className="grid gap-4 lg:grid-cols-3">
+            {taxonomyItems.map((item) => (
+              <StandardCard key={item.title} item={item} />
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-5">
+          <SectionHeading
+            kicker="API Domains"
+            title="Service domains come from the project architecture."
+            description="The list below mirrors the repository's feature, service, and contract domains."
+          />
+          <div className="surface-card flex flex-wrap gap-2 p-5">
+            {serviceDomains.map((domain) => (
+              <span
+                key={domain}
+                className="rounded-md border border-border bg-muted px-3 py-2 text-sm font-medium"
+              >
+                {domain}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-5">
+          <SectionHeading
+            kicker="Architecture"
+            title="Data flow follows the repo's contract-first pattern."
+            description="Pages use feature hooks, feature hooks call services, services use the shared HTTP client, and contracts validate data."
+          />
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {architectureItems.map((item) => (
+              <StandardCard key={item.title} item={item} />
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-5">
+          <SectionHeading
+            kicker="Governance"
+            title="Authentication, routing, and errors use existing utilities."
+            description="This section is based on the current session helpers, proxy protection, dashboard defaults, token behavior, and API error handling."
+          />
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {governanceItems.map((item) => (
+              <StandardCard key={item.title} item={item} />
+            ))}
+          </div>
+        </section>
+
+        <HomeIdeasShowcase />
+
+        <section className="grid gap-6 rounded-lg border border-border bg-foreground p-6 text-background lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:p-8 dark:bg-card dark:text-card-foreground">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+              Technical Stack
             </p>
-            <h2 className="text-3xl font-semibold tracking-tight">
-              Ready to launch your sustainability workspace?
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight">
+              Built with the stack declared in the project README.
             </h2>
-            <p className="text-sm leading-7 text-slate-200 sm:text-base">
-              Bring your team into one platform for submission, review, and
-              adoption.
+            <p className="mt-3 text-sm leading-7 text-background/75 dark:text-muted-foreground">
+              This section summarizes the actual framework, form, query,
+              validation, HTTP, styling, and routing tools used by the app.
             </p>
           </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {stackItems.map((item) => (
+              <div
+                key={item}
+                className="flex items-center gap-3 rounded-lg border border-background/15 bg-background/10 p-3 dark:border-border dark:bg-muted"
+              >
+                <CheckCircle2 className="size-5 shrink-0 text-accent" />
+                <span className="text-sm font-medium">{item}</span>
+              </div>
+            ))}
+          </div>
+        </section>
 
-          <div className="flex flex-wrap items-center gap-3">
+        <section className="grid gap-5">
+          <SectionHeading
+            kicker="FAQ"
+            title="Answers are specific to this repository."
+            description="The FAQ explains where the homepage content comes from and how it connects to real project code."
+          />
+          <div className="grid gap-4 md:grid-cols-2">
+            {faqs.map((item) => (
+              <article key={item.question} className="surface-card p-5">
+                <h3 className="text-base font-semibold">{item.question}</h3>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                  {item.answer}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-6 rounded-lg border border-border bg-primary p-6 text-primary-foreground lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:p-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-foreground/75">
+              Next Step
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight">
+              Continue through real Eco Spark routes.
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-primary-foreground/80">
+              Browse public ideas, create an account, or use the support route
+              for setup details around the backend API and protected workspaces.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
             <Link
-              href="/register"
-              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition-colors hover:bg-slate-100"
+              href="/idea"
+              className="inline-flex items-center gap-2 rounded-md bg-background px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-background/90"
             >
-              Get started
+              Browse ideas
+              <ArrowRight className="size-4" />
             </Link>
             <Link
-              href="/community"
-              className="rounded-full border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/15"
+              href="/support"
+              className="inline-flex items-center gap-2 rounded-md border border-primary-foreground/30 px-5 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/10"
             >
-              Talk to community
+              Support
             </Link>
           </div>
-        </div>
-      </section>
-    </main>
+        </section>
+      </main>
+    </div>
   );
 }

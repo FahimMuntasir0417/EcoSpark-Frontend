@@ -17,6 +17,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import type { PropsWithChildren } from "react";
+import { AiDashboardInsights } from "@/components/ai";
 import { Button } from "@/components/ui/button";
 import { ErrorState, LoadingState } from "@/components/ui/data-state";
 import { useMemberAnalyticsQuery } from "@/features/member-analytics";
@@ -400,6 +401,8 @@ export function MemberDashboardOverview() {
 
   return (
     <section className="space-y-8">
+      <AiDashboardInsights />
+
       <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-gradient-to-br from-sky-50 via-white to-emerald-50 shadow-sm">
         <div className="absolute inset-y-0 right-0 w-1/3 bg-[radial-gradient(circle_at_top_right,_rgba(56,189,248,0.14),_transparent_55%)]" />
         <div className="absolute -left-10 top-16 h-36 w-36 rounded-full bg-sky-200/35 blur-3xl" />

@@ -51,8 +51,8 @@ function PaginationLink({
           size,
         }),
         isActive
-          ? "bg-slate-950 text-white hover:bg-slate-800"
-          : "border-slate-200 text-slate-700 hover:bg-slate-50",
+          ? "bg-primary text-primary-foreground hover:bg-primary/90"
+          : "border-border text-foreground hover:bg-muted",
         className,
       )}
       {...props}

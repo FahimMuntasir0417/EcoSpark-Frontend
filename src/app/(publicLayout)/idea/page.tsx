@@ -3,18 +3,28 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
+  ArrowDownUp,
   CalendarClock,
   CreditCard,
   Eye,
+  Filter,
   Leaf,
   Lock,
+  MapPin,
+  RotateCcw,
   Search,
   Sparkles,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/data-state";
 import { Input } from "@/components/ui/input";
@@ -31,6 +41,7 @@ import {
   getMyPurchasesQueryOptions,
   useCreateCheckoutSessionMutation,
 } from "@/features/commerce";
+import { useCategoriesQuery } from "@/features/category";
 import { useIdeasQuery } from "@/features/idea";
 import {
   getCurrentPurchaseForIdea,
@@ -39,6 +50,7 @@ import {
 import { getAccessToken } from "@/lib/auth/session";
 import { getApiErrorMessage } from "@/lib/errors/api-error";
 import { cn } from "@/lib/utils";
+import type { Category } from "@/services/category.service";
 import type { Idea } from "@/services/idea.service";
 
 function hasText(value?: string | null) {
@@ -154,10 +166,10 @@ function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium",
-        tone === "accent" && "bg-sky-100 text-sky-800",
-        tone === "success" && "bg-emerald-100 text-emerald-800",
-        tone === "neutral" && "bg-slate-100 text-slate-700",
+        "inline-flex items-center rounded-full border border-border px-3 py-1 text-xs font-medium",
+        tone === "accent" && "bg-secondary text-secondary-foreground",
+        tone === "success" && "bg-primary/10 text-primary",
+        tone === "neutral" && "bg-muted text-muted-foreground",
       )}
     >
       {children}
@@ -173,16 +185,59 @@ function StatCard({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+    <div className="rounded-lg border border-border bg-muted p-4 text-foreground">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-2 text-lg font-semibold text-slate-950">{value}</p>
+      <p className="mt-2 text-lg font-semibold text-foreground">{value}</p>
     </div>
   );
 }
 
 const IDEAS_PAGE_SIZE = 3;
+const ALL_FILTER_VALUE = "ALL";
+const DEFAULT_IDEA_SORT_OPTION = "updated-desc";
+
+const filterControlClassName =
+  "h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-card";
+
+const LOCATION_FIELD_KEYS = [
+  "location",
+  "city",
+  "country",
+  "region",
+  "state",
+  "address",
+  "targetLocation",
+  "implementationLocation",
+  "siteLocation",
+];
+
+type IdeaSortOption =
+  | "updated-desc"
+  | "updated-asc"
+  | "price-asc"
+  | "price-desc"
+  | "impact-desc"
+  | "eco-desc"
+  | "views-desc"
+  | "title-asc";
+
+const IDEA_SORT_OPTIONS: Array<{ value: IdeaSortOption; label: string }> = [
+  { value: "updated-desc", label: "Newest activity" },
+  { value: "updated-asc", label: "Oldest activity" },
+  { value: "price-asc", label: "Price: low to high" },
+  { value: "price-desc", label: "Price: high to low" },
+  { value: "impact-desc", label: "Impact score" },
+  { value: "eco-desc", label: "Eco score" },
+  { value: "views-desc", label: "Most viewed" },
+  { value: "title-asc", label: "Title A-Z" },
+];
+
+type CategoryOption = {
+  value: string;
+  label: string;
+};
 
 function getTotalPages(totalPages?: number, totalPage?: number) {
   const resolvedTotalPages = totalPages ?? totalPage ?? 1;
@@ -192,6 +247,277 @@ function getTotalPages(totalPages?: number, totalPage?: number) {
   }
 
   return Math.floor(resolvedTotalPages);
+}
+
+function getDateValue(value?: string | null) {
+  if (!hasText(value)) {
+    return 0;
+  }
+
+  const parsed = new Date(value!);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+}
+
+function getIdeaActivityTimestamp(idea: Idea) {
+  return Math.max(
+    getDateValue(idea.updatedAt),
+    getDateValue(idea.lastActivityAt),
+    getDateValue(idea.publishedAt),
+    getDateValue(idea.submittedAt),
+    getDateValue(idea.createdAt),
+  );
+}
+
+function getDateBoundary(value: string, boundary: "start" | "end") {
+  const normalizedValue = value.trim();
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const parsed = new Date(`${normalizedValue}T00:00:00`);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  if (boundary === "end") {
+    parsed.setHours(23, 59, 59, 999);
+  }
+
+  return parsed.getTime();
+}
+
+function parseFilterNumber(value: string) {
+  const normalizedValue = value.trim();
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const parsed = Number.parseFloat(normalizedValue);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getIdeaNumericPrice(idea: Idea) {
+  const accessType = hasText(idea.accessType)
+    ? idea.accessType!.trim().toUpperCase()
+    : "";
+
+  if (accessType === "FREE") {
+    return 0;
+  }
+
+  if (idea.price === null || idea.price === undefined || idea.price === "") {
+    return null;
+  }
+
+  const price =
+    typeof idea.price === "number"
+      ? idea.price
+      : Number.parseFloat(String(idea.price));
+
+  return Number.isFinite(price) ? price : null;
+}
+
+function readRecordString(
+  record: Record<string, unknown> | null | undefined,
+  key: string,
+) {
+  const value = record?.[key];
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : "";
+}
+
+function readLocationValuesFromRecord(
+  record: Record<string, unknown> | null | undefined,
+) {
+  const values: string[] = [];
+
+  LOCATION_FIELD_KEYS.forEach((key) => {
+    const directValue = readRecordString(record, key);
+
+    if (directValue) {
+      values.push(directValue);
+      return;
+    }
+
+    const nestedValue = record?.[key];
+
+    if (
+      nestedValue &&
+      typeof nestedValue === "object" &&
+      !Array.isArray(nestedValue)
+    ) {
+      LOCATION_FIELD_KEYS.forEach((nestedKey) => {
+        const nestedText = readRecordString(
+          nestedValue as Record<string, unknown>,
+          nestedKey,
+        );
+
+        if (nestedText) {
+          values.push(nestedText);
+        }
+      });
+    }
+  });
+
+  return values;
+}
+
+function getIdeaLocationValues(idea: Idea) {
+  const ideaRecord = idea as Record<string, unknown>;
+  const authorRecord =
+    idea.author && typeof idea.author === "object"
+      ? (idea.author as Record<string, unknown>)
+      : null;
+
+  return [
+    ...readLocationValuesFromRecord(ideaRecord),
+    ...readLocationValuesFromRecord(authorRecord),
+  ];
+}
+
+function getIdeaLocationLabel(idea: Idea) {
+  return getIdeaLocationValues(idea)[0] ?? "Location not provided";
+}
+
+function getIdeaCategoryCandidates(idea: Idea) {
+  return [idea.category?.id, idea.categoryId, idea.category?.slug, idea.category?.name]
+    .filter(hasText)
+    .map((value) => value!.trim());
+}
+
+function getIdeaCategoryFilterValue(idea: Idea) {
+  return getIdeaCategoryCandidates(idea)[0] ?? "";
+}
+
+function getIdeaCategoryLabel(idea: Idea) {
+  return idea.category?.name ?? idea.category?.slug ?? idea.categoryId ?? "";
+}
+
+function addCategoryOption(
+  options: Map<string, CategoryOption>,
+  value: string,
+  label: string,
+) {
+  const normalizedValue = value.trim();
+  const normalizedLabel = label.trim();
+
+  if (!normalizedValue || !normalizedLabel || options.has(normalizedValue)) {
+    return;
+  }
+
+  options.set(normalizedValue, {
+    value: normalizedValue,
+    label: normalizedLabel,
+  });
+}
+
+function getCategoryOptions(ideas: Idea[], categories: Category[]) {
+  const options = new Map<string, CategoryOption>();
+
+  categories.forEach((category) => {
+    if (category.isActive === false) {
+      return;
+    }
+
+    addCategoryOption(options, category.id, category.name);
+  });
+
+  ideas.forEach((idea) => {
+    addCategoryOption(
+      options,
+      getIdeaCategoryFilterValue(idea),
+      getIdeaCategoryLabel(idea),
+    );
+  });
+
+  return [...options.values()].sort((left, right) =>
+    left.label.localeCompare(right.label),
+  );
+}
+
+function compareTitles(left: Idea, right: Idea) {
+  return getIdeaTitle(left).localeCompare(getIdeaTitle(right));
+}
+
+function compareOptionalNumbers(
+  left: number | null | undefined,
+  right: number | null | undefined,
+  direction: "asc" | "desc",
+) {
+  const hasLeft = typeof left === "number" && Number.isFinite(left);
+  const hasRight = typeof right === "number" && Number.isFinite(right);
+
+  if (!hasLeft && !hasRight) {
+    return 0;
+  }
+
+  if (!hasLeft) {
+    return 1;
+  }
+
+  if (!hasRight) {
+    return -1;
+  }
+
+  return direction === "asc" ? left - right : right - left;
+}
+
+function sortIdeas(ideas: Idea[], sortOption: IdeaSortOption) {
+  return [...ideas].sort((left, right) => {
+    let comparison = 0;
+
+    switch (sortOption) {
+      case "updated-asc":
+        comparison =
+          getIdeaActivityTimestamp(left) - getIdeaActivityTimestamp(right);
+        break;
+      case "price-asc":
+        comparison = compareOptionalNumbers(
+          getIdeaNumericPrice(left),
+          getIdeaNumericPrice(right),
+          "asc",
+        );
+        break;
+      case "price-desc":
+        comparison = compareOptionalNumbers(
+          getIdeaNumericPrice(left),
+          getIdeaNumericPrice(right),
+          "desc",
+        );
+        break;
+      case "impact-desc":
+        comparison = compareOptionalNumbers(
+          left.impactScore,
+          right.impactScore,
+          "desc",
+        );
+        break;
+      case "eco-desc":
+        comparison = compareOptionalNumbers(left.ecoScore, right.ecoScore, "desc");
+        break;
+      case "views-desc":
+        comparison = compareOptionalNumbers(
+          left.totalViews,
+          right.totalViews,
+          "desc",
+        );
+        break;
+      case "title-asc":
+        comparison = compareTitles(left, right);
+        break;
+      case "updated-desc":
+      default:
+        comparison =
+          getIdeaActivityTimestamp(right) - getIdeaActivityTimestamp(left);
+        break;
+    }
+
+    return comparison === 0 ? compareTitles(left, right) : comparison;
+  });
 }
 
 type PaginationPageItem = number | "ellipsis";
@@ -243,12 +569,48 @@ function getPaginationItems(totalPages: number, currentPage: number): Pagination
   return items;
 }
 
+function subscribeToAuthSnapshot(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener("focus", onStoreChange);
+
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener("focus", onStoreChange);
+  };
+}
+
+function getClientAuthSnapshot() {
+  return Boolean(getAccessToken());
+}
+
+function getServerAuthSnapshot() {
+  return false;
+}
+
 export default function IdeaPage() {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchInputValue, setSearchInputValue] = useState("");
   const [appliedSearchValue, setAppliedSearchValue] = useState("");
-  const [hasClientAuth, setHasClientAuth] = useState(false);
+  const [selectedCategoryValue, setSelectedCategoryValue] =
+    useState(ALL_FILTER_VALUE);
+  const [minimumPriceValue, setMinimumPriceValue] = useState("");
+  const [maximumPriceValue, setMaximumPriceValue] = useState("");
+  const [dateFromValue, setDateFromValue] = useState("");
+  const [dateToValue, setDateToValue] = useState("");
+  const [locationFilterValue, setLocationFilterValue] = useState("");
+  const [sortOption, setSortOption] = useState<IdeaSortOption>(
+    DEFAULT_IDEA_SORT_OPTION,
+  );
+  const hasClientAuth = useSyncExternalStore(
+    subscribeToAuthSnapshot,
+    getClientAuthSnapshot,
+    getServerAuthSnapshot,
+  );
   const [checkoutFeedback, setCheckoutFeedback] = useState<Feedback>(null);
 
   const ideasQueryParams = useMemo(() => {
@@ -263,16 +625,13 @@ export default function IdeaPage() {
   }, [appliedSearchValue]);
 
   const ideasQuery = useIdeasQuery(ideasQueryParams);
+  const categoriesQuery = useCategoriesQuery();
   const purchasesQuery = useQuery({
     ...getMyPurchasesQueryOptions(),
     enabled: hasClientAuth,
     retry: false,
   });
   const createCheckoutSessionMutation = useCreateCheckoutSessionMutation();
-
-  useEffect(() => {
-    setHasClientAuth(Boolean(getAccessToken()));
-  }, []);
 
   useEffect(() => {
     const normalizedSearch = searchInputValue.trim();
@@ -288,26 +647,186 @@ export default function IdeaPage() {
     };
   }, [searchInputValue]);
 
-  const ideas = ideasQuery.data?.data ?? [];
+  const sourceIdeas = ideasQuery.data?.data ?? [];
+  const categories = categoriesQuery.data?.data ?? [];
+  const categoryOptions = useMemo(
+    () => getCategoryOptions(sourceIdeas, categories),
+    [categories, sourceIdeas],
+  );
+  const filteredIdeas = useMemo(() => {
+    const minimumPrice = parseFilterNumber(minimumPriceValue);
+    const maximumPrice = parseFilterNumber(maximumPriceValue);
+    const dateFrom = getDateBoundary(dateFromValue, "start");
+    const dateTo = getDateBoundary(dateToValue, "end");
+    const normalizedLocation = locationFilterValue.trim().toLowerCase();
+
+    return sortIdeas(
+      sourceIdeas.filter((idea) => {
+        if (
+          selectedCategoryValue !== ALL_FILTER_VALUE &&
+          !getIdeaCategoryCandidates(idea).includes(selectedCategoryValue)
+        ) {
+          return false;
+        }
+
+        if (minimumPrice !== null || maximumPrice !== null) {
+          const price = getIdeaNumericPrice(idea);
+
+          if (price === null) {
+            return false;
+          }
+
+          if (minimumPrice !== null && price < minimumPrice) {
+            return false;
+          }
+
+          if (maximumPrice !== null && price > maximumPrice) {
+            return false;
+          }
+        }
+
+        if (dateFrom !== null || dateTo !== null) {
+          const activityDate = getIdeaActivityTimestamp(idea);
+
+          if (activityDate <= 0) {
+            return false;
+          }
+
+          if (dateFrom !== null && activityDate < dateFrom) {
+            return false;
+          }
+
+          if (dateTo !== null && activityDate > dateTo) {
+            return false;
+          }
+        }
+
+        if (normalizedLocation) {
+          const locationText = getIdeaLocationValues(idea).join(" ").toLowerCase();
+
+          if (!locationText.includes(normalizedLocation)) {
+            return false;
+          }
+        }
+
+        return true;
+      }),
+      sortOption,
+    );
+  }, [
+    dateFromValue,
+    dateToValue,
+    locationFilterValue,
+    maximumPriceValue,
+    minimumPriceValue,
+    selectedCategoryValue,
+    sortOption,
+    sourceIdeas,
+  ]);
   const purchases = purchasesQuery.data?.data ?? [];
-  const totalIdeas = ideas.length;
+  const totalAvailableIdeas = sourceIdeas.length;
+  const totalIdeas = filteredIdeas.length;
   const totalPages = getTotalPages(
     totalIdeas > 0 ? Math.ceil(totalIdeas / IDEAS_PAGE_SIZE) : 1,
     undefined,
   );
   const activePage = Math.min(currentPage, totalPages);
   const pageStartIndex = (activePage - 1) * IDEAS_PAGE_SIZE;
-  const pageIdeas = ideas.slice(pageStartIndex, pageStartIndex + IDEAS_PAGE_SIZE);
+  const pageIdeas = filteredIdeas.slice(
+    pageStartIndex,
+    pageStartIndex + IDEAS_PAGE_SIZE,
+  );
   const rangeStart = totalIdeas === 0 ? 0 : pageStartIndex + 1;
   const rangeEnd =
     totalIdeas === 0 ? 0 : Math.min(pageStartIndex + pageIdeas.length, totalIdeas);
   const hasAppliedSearch = appliedSearchValue.trim().length > 0;
+  const hasCategoryFilter = selectedCategoryValue !== ALL_FILTER_VALUE;
+  const hasPriceFilter =
+    minimumPriceValue.trim().length > 0 || maximumPriceValue.trim().length > 0;
+  const hasDateFilter =
+    dateFromValue.trim().length > 0 || dateToValue.trim().length > 0;
+  const hasLocationFilter = locationFilterValue.trim().length > 0;
+  const hasSortOverride = sortOption !== DEFAULT_IDEA_SORT_OPTION;
+  const hasFieldFilters =
+    hasCategoryFilter || hasPriceFilter || hasDateFilter || hasLocationFilter;
+  const hasActiveControls =
+    searchInputValue.trim().length > 0 ||
+    hasAppliedSearch ||
+    hasFieldFilters ||
+    hasSortOverride;
+  const activeCategoryLabel =
+    categoryOptions.find((option) => option.value === selectedCategoryValue)?.label ??
+    "";
+  const activeSortLabel =
+    IDEA_SORT_OPTIONS.find((option) => option.value === sortOption)?.label ??
+    "Newest activity";
+  const activeFilterSummary = useMemo(() => {
+    const parts: string[] = [];
+
+    if (hasAppliedSearch) {
+      parts.push(`Search: ${appliedSearchValue}`);
+    }
+
+    if (hasCategoryFilter && activeCategoryLabel) {
+      parts.push(`Category: ${activeCategoryLabel}`);
+    }
+
+    if (hasPriceFilter) {
+      const minimumLabel = minimumPriceValue.trim() || "0";
+      const maximumLabel = maximumPriceValue.trim() || "any";
+      parts.push(`Price: ${minimumLabel}-${maximumLabel}`);
+    }
+
+    if (hasDateFilter) {
+      const fromLabel = dateFromValue.trim() || "any";
+      const toLabel = dateToValue.trim() || "any";
+      parts.push(`Date: ${fromLabel}-${toLabel}`);
+    }
+
+    if (hasLocationFilter) {
+      parts.push(`Location: ${locationFilterValue.trim()}`);
+    }
+
+    if (hasSortOverride) {
+      parts.push(`Sort: ${activeSortLabel}`);
+    }
+
+    return parts.join(" | ");
+  }, [
+    activeCategoryLabel,
+    activeSortLabel,
+    appliedSearchValue,
+    dateFromValue,
+    dateToValue,
+    hasAppliedSearch,
+    hasCategoryFilter,
+    hasDateFilter,
+    hasLocationFilter,
+    hasPriceFilter,
+    hasSortOverride,
+    locationFilterValue,
+    maximumPriceValue,
+    minimumPriceValue,
+  ]);
   const disablePrevious = activePage <= 1 || ideasQuery.isFetching;
   const disableNext = activePage >= totalPages || ideasQuery.isFetching;
   const paginationItems = useMemo(
     () => getPaginationItems(totalPages, activePage),
     [activePage, totalPages],
   );
+
+  const resetControls = () => {
+    setSearchInputValue("");
+    setAppliedSearchValue("");
+    setSelectedCategoryValue(ALL_FILTER_VALUE);
+    setMinimumPriceValue("");
+    setMaximumPriceValue("");
+    setDateFromValue("");
+    setDateToValue("");
+    setLocationFilterValue("");
+    setSortOption(DEFAULT_IDEA_SORT_OPTION);
+    setCurrentPage(1);
+  };
 
   const startCheckout = async (ideaId: string, purchaseId?: string) => {
     setCheckoutFeedback(null);
@@ -373,108 +892,231 @@ export default function IdeaPage() {
           </Badge>
 
           <div className="space-y-3">
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
               Browse ideas ready for review, adoption, or purchase.
             </h1>
-            <p className="max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
+            <p className="max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
               Free ideas open immediately. Paid ideas stay locked until the
               purchase is recorded as paid.
             </p>
             {ideasQuery.data?.message ? (
-              <p className="text-sm text-slate-500">{ideasQuery.data.message}</p>
+              <p className="text-sm text-muted-foreground">{ideasQuery.data.message}</p>
             ) : null}
           </div>
         </div>
 
-        <div className="grid gap-3 rounded-[1.5rem] bg-slate-950 p-5 text-white">
+        <div className="grid gap-3 rounded-lg bg-primary p-5 text-primary-foreground">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+            <p className="text-xs uppercase tracking-[0.2em] text-primary-foreground/70">
               Library stats
             </p>
             <p className="mt-2 text-3xl font-semibold">
               {totalIdeas.toLocaleString()}
             </p>
-            <p className="mt-1 text-sm text-slate-300">matching ideas</p>
+            <p className="mt-1 text-sm text-primary-foreground/80">matching ideas</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-white/10 p-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
+            <div className="rounded-lg bg-primary-foreground/10 p-3">
+              <p className="text-xs uppercase tracking-[0.16em] text-primary-foreground/70">
                 Page
               </p>
               <p className="mt-2 text-lg font-semibold">
                 {activePage}/{totalPages}
               </p>
             </div>
-            <div className="rounded-2xl bg-white/10 p-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
+            <div className="rounded-lg bg-primary-foreground/10 p-3">
+              <p className="text-xs uppercase tracking-[0.16em] text-primary-foreground/70">
                 Total
               </p>
               <p className="mt-2 text-lg font-semibold">
-                {totalIdeas.toLocaleString()}
+                {totalAvailableIdeas.toLocaleString()}
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="surface-card grid gap-3 p-4 sm:p-5">
+      <section className="surface-card grid gap-4 p-4 sm:p-5">
         <form
-          className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+          className="grid gap-4"
           onSubmit={(event) => {
             event.preventDefault();
             setCurrentPage(1);
             setAppliedSearchValue(searchInputValue.trim());
           }}
         >
-          <label className="relative block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              value={searchInputValue}
-              onChange={(event) => {
-                setSearchInputValue(event.target.value);
-              }}
-              placeholder="Search ideas by title, summary, author, or category"
-              className="h-10 border-slate-200 bg-white pl-9"
-            />
-          </label>
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+            <label className="relative block">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                aria-label="Search ideas"
+                value={searchInputValue}
+                onChange={(event) => {
+                  setSearchInputValue(event.target.value);
+                }}
+                placeholder="Search ideas by title, summary, author, or category"
+                className="h-10 bg-background pl-9 text-foreground placeholder:text-muted-foreground dark:bg-card"
+              />
+            </label>
 
-          <Button
-            type="submit"
-            className="h-10 rounded-full bg-slate-950 px-5 text-white hover:bg-slate-800"
-          >
-            Apply
-          </Button>
+            <Button
+              type="submit"
+              className="h-10 rounded-full px-5"
+            >
+              <Filter className="size-4" />
+              Apply
+            </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10 rounded-full border-slate-200 px-5 text-slate-700 hover:bg-slate-50"
-            onClick={() => {
-              setSearchInputValue("");
-              setAppliedSearchValue("");
-              setCurrentPage(1);
-            }}
-            disabled={!searchInputValue.trim() && !hasAppliedSearch}
-          >
-            Clear
-          </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 rounded-full px-5"
+              onClick={resetControls}
+              disabled={!hasActiveControls}
+            >
+              <RotateCcw className="size-4" />
+              Reset
+            </Button>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <label className="grid gap-2 text-sm font-medium text-foreground">
+              Category
+              <select
+                value={selectedCategoryValue}
+                onChange={(event) => {
+                  setSelectedCategoryValue(event.target.value);
+                  setCurrentPage(1);
+                }}
+                className={filterControlClassName}
+              >
+                <option value={ALL_FILTER_VALUE}>All categories</option>
+                {categoryOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-2 text-sm font-medium text-foreground">
+              Min price
+              <Input
+                type="number"
+                min="0"
+                inputMode="decimal"
+                value={minimumPriceValue}
+                onChange={(event) => {
+                  setMinimumPriceValue(event.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="0"
+                className="h-10 bg-background text-foreground placeholder:text-muted-foreground dark:bg-card"
+              />
+            </label>
+
+            <label className="grid gap-2 text-sm font-medium text-foreground">
+              Max price
+              <Input
+                type="number"
+                min="0"
+                inputMode="decimal"
+                value={maximumPriceValue}
+                onChange={(event) => {
+                  setMaximumPriceValue(event.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Any"
+                className="h-10 bg-background text-foreground placeholder:text-muted-foreground dark:bg-card"
+              />
+            </label>
+
+            <label className="grid gap-2 text-sm font-medium text-foreground">
+              Date from
+              <Input
+                type="date"
+                value={dateFromValue}
+                onChange={(event) => {
+                  setDateFromValue(event.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-10 bg-background text-foreground dark:bg-card"
+              />
+            </label>
+
+            <label className="grid gap-2 text-sm font-medium text-foreground">
+              Date to
+              <Input
+                type="date"
+                value={dateToValue}
+                onChange={(event) => {
+                  setDateToValue(event.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-10 bg-background text-foreground dark:bg-card"
+              />
+            </label>
+
+            <label className="grid gap-2 text-sm font-medium text-foreground">
+              Location
+              <span className="relative block">
+                <MapPin className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={locationFilterValue}
+                  onChange={(event) => {
+                    setLocationFilterValue(event.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="City, region, or country"
+                  className="h-10 bg-background pl-9 text-foreground placeholder:text-muted-foreground dark:bg-card"
+                />
+              </span>
+            </label>
+
+            <label className="grid gap-2 text-sm font-medium text-foreground md:col-span-2">
+              <span className="inline-flex items-center gap-2">
+                <ArrowDownUp className="size-4 text-muted-foreground" />
+                Sort by
+              </span>
+              <select
+                value={sortOption}
+                onChange={(event) => {
+                  setSortOption(event.target.value as IdeaSortOption);
+                  setCurrentPage(1);
+                }}
+                className={filterControlClassName}
+              >
+                {IDEA_SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </form>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
           <p>
             Showing {rangeStart}-{rangeEnd} of {totalIdeas.toLocaleString()}
+            {totalIdeas !== totalAvailableIdeas
+              ? ` from ${totalAvailableIdeas.toLocaleString()} total`
+              : ""}
           </p>
-          {hasAppliedSearch ? (
-            <p>
-              Search: <span className="font-medium text-slate-800">{appliedSearchValue}</span>
+          {hasActiveControls && activeFilterSummary ? (
+            <p className="min-w-0 break-words">
+              Active:{" "}
+              <span className="font-medium text-foreground">
+                {activeFilterSummary}
+              </span>
             </p>
           ) : (
             <p>Showing all public ideas</p>
           )}
         </div>
-        <p className="text-xs text-slate-500">
-          Search updates automatically while typing.
+        <p className="text-xs text-muted-foreground">
+          Search and filters update automatically while typing or changing fields.
         </p>
         {checkoutFeedback ? (
           <p
@@ -490,12 +1132,12 @@ export default function IdeaPage() {
         ) : null}
       </section>
 
-      {ideas.length === 0 ? (
+      {totalIdeas === 0 ? (
         <EmptyState
           title="No ideas found"
           description={
-            hasAppliedSearch
-              ? "Try another keyword or clear the search filter."
+            totalAvailableIdeas > 0
+              ? "Try another keyword, adjust the filters, or reset the controls."
               : "The public catalog is empty right now."
           }
         />
@@ -525,6 +1167,7 @@ export default function IdeaPage() {
                   ? "Payment is pending. Verify it before the detail page opens."
                   : "Protected details stay locked until purchase is complete."
               : "Public idea details are available now.";
+            const ideaLocation = getIdeaLocationLabel(idea);
 
             return (
               <article
@@ -572,21 +1215,25 @@ export default function IdeaPage() {
                       <StatCard label="Views" value={formatMetric(idea.totalViews)} />
                     </div>
 
-                    <div className="grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+                    <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
                       <p className="flex items-center gap-2">
-                        <UserRound className="size-4 text-slate-400" />
+                        <UserRound className="size-4 text-muted-foreground" />
                         {idea.author?.name ?? "Unknown author"}
                       </p>
                       <p className="flex items-center gap-2">
-                        <CalendarClock className="size-4 text-slate-400" />
+                        <CalendarClock className="size-4 text-muted-foreground" />
                         Updated {formatDate(idea.updatedAt)}
                       </p>
                       <p className="flex items-center gap-2">
-                        <Leaf className="size-4 text-slate-400" />
+                        <MapPin className="size-4 text-muted-foreground" />
+                        <span className="min-w-0 break-words">{ideaLocation}</span>
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <Leaf className="size-4 text-muted-foreground" />
                         CO2 {formatMetric(idea.estimatedCo2ReductionKgMonth, " kg/month")}
                       </p>
                       <p className="flex items-center gap-2">
-                        <Eye className="size-4 text-slate-400" />
+                        <Eye className="size-4 text-muted-foreground" />
                         {formatMetric(idea.uniqueViews)} unique views
                       </p>
                     </div>
@@ -595,7 +1242,7 @@ export default function IdeaPage() {
                       {canOpenDetails ? (
                         <Link
                           href={`/idea/${idea.id}`}
-                          className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+                          className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
                         >
                           Open details
                           <ArrowRight className="size-4" />
@@ -604,7 +1251,7 @@ export default function IdeaPage() {
                         <Button
                           type="button"
                           variant="outline"
-                          className="rounded-full border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-700 hover:border-slate-300 hover:text-slate-950"
+                          className="rounded-full px-5 py-2.5 text-sm font-medium"
                           disabled={isCheckingPaidAccess || isRedirectingToCheckout}
                           onClick={() => {
                             void startCheckout(idea.id, hasPendingCheckout ? currentPurchase?.id : undefined);
@@ -628,7 +1275,7 @@ export default function IdeaPage() {
                           )}
                         </Button>
                       )}
-                      <p className="mt-3 text-xs text-slate-500">{actionDescription}</p>
+                      <p className="mt-3 text-xs text-muted-foreground">{actionDescription}</p>
                     </div>
                   </div>
                 </div>
@@ -716,11 +1363,11 @@ export default function IdeaPage() {
             </PaginationContent>
           </Pagination>
 
-          <div className="text-center text-sm text-slate-600">
+          <div className="text-center text-sm text-muted-foreground">
             <p>
               Page {activePage} of {totalPages}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               {ideasQuery.isFetching ? "Updating results..." : `${pageIdeas.length} ideas on this page`}
             </p>
           </div>
