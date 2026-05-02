@@ -19,6 +19,7 @@ import {
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { HomeHero } from "./_components/home-hero";
 import { HomeIdeasShowcase } from "./_components/home-ideas-showcase";
@@ -33,6 +34,25 @@ type RouteItem = {
   label: string;
   href: string;
   detail: string;
+};
+
+type ImageStoryMetric = {
+  value: string;
+  label: string;
+  detail: string;
+};
+
+type ImageStorySection = {
+  kicker: string;
+  title: string;
+  description: string;
+  imageSrc: string;
+  contentSide: "left" | "right";
+  metrics: ImageStoryMetric[];
+  routes: RouteItem[];
+  highlights: IconCard[];
+  primaryAction: RouteItem;
+  secondaryAction: RouteItem;
 };
 
 const publicRouteItems: RouteItem[] = [
@@ -200,6 +220,24 @@ const adminWorkspaceRoutes: RouteItem[] = [
     detail: "Campaign operations",
   },
 ];
+
+function selectRoutesByHref(routes: RouteItem[], hrefs: string[]) {
+  const routeMap = new Map(routes.map((route) => [route.href, route]));
+
+  return hrefs
+    .map((href) => routeMap.get(href))
+    .filter((route): route is RouteItem => Boolean(route));
+}
+
+function requireRouteByHref(routes: RouteItem[], href: string) {
+  const route = routes.find((item) => item.href === href);
+
+  if (!route) {
+    throw new Error(`Missing homepage route configuration for ${href}`);
+  }
+
+  return route;
+}
 
 const serviceDomains = [
   "auth",
@@ -433,6 +471,100 @@ const stackItems = [
   "Role-based proxy protection",
 ];
 
+const innovationLabRoutes = selectRoutesByHref(
+  [...scientistWorkspaceRoutes, ...adminWorkspaceRoutes],
+  [
+    "/scientist/dashboard/create-idea",
+    "/scientist/dashboard/draft-ideas",
+    "/scientist/dashboard/idea-attachments",
+    "/scientist/dashboard/submitted-ideas",
+    "/admin/dashboard/pending-review",
+    "/admin/dashboard/featured-ideas",
+    "/admin/dashboard/archived-ideas",
+  ],
+);
+
+const adoptionHubRoutes = selectRoutesByHref(
+  [...publicRouteItems, ...memberWorkspaceRoutes, ...commonProtectedRoutes],
+  [
+    "/idea",
+    "/campaigns",
+    "/scientist",
+    "/community",
+    "/dashboard/browse-ideas",
+    "/saved-ideas",
+    "/my-purchases",
+    "/my-vote",
+  ],
+);
+
+const gloriousSections: ImageStorySection[] = [
+  {
+    kicker: "Innovation Lab",
+    title: "Turn scientist submissions into review-ready Eco Spark records.",
+    description:
+      "The lab story follows real scientist creation routes, attachment handling, draft tracking, admin review queues, featured ideas, and archive flows already present in the app.",
+    imageSrc: "/images/eco-spark-innovation-lab.png",
+    contentSide: "left",
+    metrics: [
+      {
+        value: innovationLabRoutes.length.toString(),
+        label: "pipeline routes",
+        detail: "Scientist and admin submit-to-review pages",
+      },
+      {
+        value: architectureItems.length.toString(),
+        label: "architecture controls",
+        detail: "Contract, query, service, and analytics modules",
+      },
+      {
+        value: taxonomyItems.length.toString(),
+        label: "taxonomy tools",
+        detail: "Categories, tags, and specialties for idea context",
+      },
+    ],
+    routes: innovationLabRoutes,
+    highlights: [architectureItems[0], architectureItems[1], governanceItems[1]],
+    primaryAction: requireRouteByHref(
+      scientistWorkspaceRoutes,
+      "/scientist/dashboard/create-idea",
+    ),
+    secondaryAction: requireRouteByHref(
+      adminWorkspaceRoutes,
+      "/admin/dashboard/pending-review",
+    ),
+  },
+  {
+    kicker: "Adoption Hub",
+    title: "Move public discovery into member adoption and paid access.",
+    description:
+      "The adoption story is built from the public idea, campaign, scientist, community, member browsing, saved idea, vote, and purchase routes instead of static demo cards.",
+    imageSrc: "/images/eco-spark-adoption-hub.png",
+    contentSide: "right",
+    metrics: [
+      {
+        value: adoptionHubRoutes.length.toString(),
+        label: "adoption routes",
+        detail: "Public discovery and member activity pages",
+      },
+      {
+        value: commerceItems.length.toString(),
+        label: "commerce surfaces",
+        detail: "Checkout, payment success, and purchase history",
+      },
+      {
+        value: productSurfaces.length.toString(),
+        label: "public catalogs",
+        detail: "Ideas, campaigns, scientists, and community reports",
+      },
+    ],
+    routes: adoptionHubRoutes,
+    highlights: [commerceItems[0], commerceItems[1], productSurfaces[3]],
+    primaryAction: requireRouteByHref(publicRouteItems, "/idea"),
+    secondaryAction: requireRouteByHref(commonProtectedRoutes, "/my-purchases"),
+  },
+];
+
 const faqs = [
   {
     question: "What project data does this homepage use?",
@@ -515,6 +647,118 @@ function RoutePill({ route }: { route: RouteItem }) {
     >
       {route.label}
     </Link>
+  );
+}
+
+function ImageRoutePill({ route }: { route: RouteItem }) {
+  return (
+    <Link
+      href={route.href}
+      className="rounded-md border border-white/25 bg-black/25 px-3 py-2 text-xs font-semibold text-white/90 backdrop-blur-md transition-colors hover:bg-white hover:text-foreground"
+    >
+      {route.label}
+    </Link>
+  );
+}
+
+function ImageBackedSection({ section }: { section: ImageStorySection }) {
+  const overlayClassName =
+    section.contentSide === "right"
+      ? "glorious-section-overlay-right"
+      : "glorious-section-overlay-left";
+
+  return (
+    <section className="glorious-image-section relative isolate min-h-[34rem] overflow-hidden rounded-lg border border-border bg-foreground text-white shadow-sm">
+      <Image
+        src={section.imageSrc}
+        alt=""
+        fill
+        sizes="(max-width: 1024px) 100vw, 1280px"
+        className="glorious-section-image object-cover"
+      />
+      <div aria-hidden="true" className={overlayClassName} />
+      <div aria-hidden="true" className="glorious-section-lattice" />
+      <div aria-hidden="true" className="glorious-section-scan" />
+
+      <div
+        className={`relative z-10 flex min-h-[34rem] p-5 sm:p-6 lg:p-8 ${
+          section.contentSide === "right" ? "justify-end" : "justify-start"
+        }`}
+      >
+        <div className="glorious-section-copy grid w-full max-w-3xl content-center gap-6 py-8 lg:py-12">
+          <div className="grid gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
+              {section.kicker}
+            </p>
+            <h2 className="max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
+              {section.title}
+            </h2>
+            <p className="max-w-2xl text-sm leading-7 text-white/80 sm:text-base">
+              {section.description}
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            {section.metrics.map((metric) => (
+              <div
+                key={metric.label}
+                className="rounded-lg border border-white/20 bg-white/10 p-4 backdrop-blur-md"
+              >
+                <p className="text-3xl font-semibold tracking-tight text-white">
+                  {metric.value}
+                </p>
+                <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-accent">
+                  {metric.label}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-white/70">
+                  {metric.detail}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            {section.highlights.map((item) => (
+              <article
+                key={item.title}
+                className="rounded-lg border border-white/20 bg-black/25 p-4 backdrop-blur-md"
+              >
+                <span className="flex size-9 items-center justify-center rounded-md bg-white text-foreground">
+                  <item.icon className="size-4" />
+                </span>
+                <h3 className="mt-3 text-sm font-semibold">{item.title}</h3>
+                <p className="mt-2 line-clamp-3 text-xs leading-5 text-white/70">
+                  {item.description}
+                </p>
+              </article>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {section.routes.map((route) => (
+              <ImageRoutePill key={route.href} route={route} />
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href={section.primaryAction.href}
+              className="inline-flex items-center gap-2 rounded-md bg-white px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-white/90"
+            >
+              {section.primaryAction.label}
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href={section.secondaryAction.href}
+              className="inline-flex items-center gap-2 rounded-md border border-white/30 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/20"
+            >
+              <CheckCircle2 className="size-4" />
+              {section.secondaryAction.label}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -635,6 +879,10 @@ export default function Home() {
             ))}
           </div>
         </section>
+
+        {gloriousSections.map((section) => (
+          <ImageBackedSection key={section.title} section={section} />
+        ))}
 
         <section className="surface-card grid gap-6 p-6 lg:p-8">
           <SectionHeading

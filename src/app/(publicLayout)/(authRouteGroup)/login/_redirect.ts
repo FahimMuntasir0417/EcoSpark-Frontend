@@ -1,4 +1,4 @@
-import { APP_ROUTES } from "@/lib/navigation/redirect-policy";
+import { resolvePostLoginTarget } from "@/lib/navigation/redirect-policy";
 
 export function sanitizeLoginRedirectPath(
   value: string | null | undefined,
@@ -32,9 +32,7 @@ export function resolveLoginRedirectTarget(
   requestedRedirect: string | null | undefined,
   roleInput: string | null | undefined,
 ): string {
-  void requestedRedirect;
-  void roleInput;
-  return APP_ROUTES.home;
+  return resolvePostLoginTarget(requestedRedirect, roleInput);
 }
 
 export function resolveLoginRedirectTargetFromSession(

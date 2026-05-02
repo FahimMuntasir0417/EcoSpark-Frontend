@@ -1,7 +1,16 @@
 "use client";
 
 import { isAxiosError } from "axios";
-import { ArrowRight, CheckCircle2, Leaf, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Chrome,
+  FlaskConical,
+  Leaf,
+  ShieldCheck,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
@@ -23,13 +32,14 @@ import {
   loginFormSchema,
   useLoginMutation,
 } from "@/features/auth";
-import { getUserRole, syncRoleFromAccessToken } from "@/lib/auth/session";
+import {
+  getUserRole,
+  persistAuthSession,
+  syncRoleFromAccessToken,
+} from "@/lib/auth/session";
 import { ApiClientError, normalizeApiError } from "@/lib/errors/api-error";
 import { resolvePostLoginTarget } from "@/lib/navigation/redirect-policy";
-import {
-  resolveLoginRedirectTargetFromSession,
-  sanitizeLoginRedirectPath,
-} from "./_redirect";
+import { sanitizeLoginRedirectPath } from "./_redirect";
 import type { FormFeedback } from "@/features/auth";
 import type { LoginInput } from "@/services/auth.service";
 import type { ApiErrorResponse } from "@/types/api";
@@ -38,10 +48,51 @@ const DEFAULT_AUTH_REDIRECT_PATH = "/dashboard";
 const EMAIL_VERIFICATION_REQUIRED_PATTERN =
   /\bEMAIL_NOT_VERIFIED\b|email\s+(is\s+)?not\s+verified|verify\s+your\s+email|email\s+verification(?:\s+required)?|account\s+not\s+verified|unverified/i;
 
+const oauthErrorMessages: Record<string, string> = {
+  access_denied: "Google sign-in was cancelled before access was granted.",
+  no_callback_url: "Google sign-in could not finish because the callback URL is missing.",
+  no_session_found: "Google sign-in completed, but the backend did not create a session.",
+  oauth_missing_token: "Google sign-in completed, but the login token was missing.",
+  oauth_failed: "Google sign-in could not be completed. Please try again.",
+  state_not_found: "Google sign-in expired before it completed. Please start again.",
+};
+
+const googleAuthEndpoint =
+  process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL?.trim() ||
+  "/api/v1/auth/login/google";
+
 const initialFormState: LoginInput = {
   email: "",
   password: "",
 };
+
+type DemoAccount = {
+  role: string;
+  email: string;
+  password: string;
+  description: string;
+  icon: LucideIcon;
+};
+
+const demoAccounts: DemoAccount[] = [
+  {
+    role: "Admin",
+    email: process.env.NEXT_PUBLIC_DEMO_ADMIN_EMAIL ?? "admin@ecospark.local",
+    password: process.env.NEXT_PUBLIC_DEMO_ADMIN_PASSWORD ?? "Admin12345",
+    description: "Moderation, users, taxonomy, and campaigns",
+    icon: ShieldCheck,
+  },
+  {
+    role: "Scientist",
+    email:
+      process.env.NEXT_PUBLIC_DEMO_SCIENTIST_EMAIL ??
+      "muntasirbejoy66@gmail.com",
+    password:
+      process.env.NEXT_PUBLIC_DEMO_SCIENTIST_PASSWORD ?? "StrongPass123!",
+    description: "Idea creation, drafts, attachments, and submissions",
+    icon: FlaskConical,
+  },
+];
 
 const platformHighlights = [
   {
@@ -150,6 +201,73 @@ function buildVerifyEmailHref(email: string) {
   return `/verify-email?email=${encodeURIComponent(email)}`;
 }
 
+function getOAuthErrorFeedback(errorCode: string | null): FormFeedback | null {
+  if (!errorCode) {
+    return null;
+  }
+
+  const normalizedCode = errorCode.trim();
+
+  if (!normalizedCode) {
+    return null;
+  }
+
+  return {
+    type: "error",
+    text:
+      oauthErrorMessages[normalizedCode] ??
+      `Google sign-in failed: ${normalizedCode.replaceAll("_", " ")}`,
+  };
+}
+
+function getOAuthHashPayload() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const rawHash = window.location.hash.startsWith("#")
+    ? window.location.hash.slice(1)
+    : window.location.hash;
+
+  if (!rawHash) {
+    return null;
+  }
+
+  const params = new URLSearchParams(rawHash);
+
+  if (params.get("oauth") !== "success") {
+    return null;
+  }
+
+  const accessToken = params.get("accessToken")?.trim();
+
+  if (!accessToken) {
+    return {
+      accessToken: null,
+      refreshToken: null,
+      redirectPath: sanitizeLoginRedirectPath(params.get("redirect")),
+    };
+  }
+
+  return {
+    accessToken,
+    refreshToken: params.get("refreshToken")?.trim() || null,
+    redirectPath: sanitizeLoginRedirectPath(params.get("redirect")),
+  };
+}
+
+function removeLocationHash() {
+  if (typeof window === "undefined" || !window.location.hash) {
+    return;
+  }
+
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}${window.location.search}`,
+  );
+}
+
 function isEmailVerificationRequired(error: unknown) {
   const normalized = normalizeApiError(error);
   const candidates = [
@@ -174,6 +292,8 @@ export default function LoginPage() {
   const loginMutation = useLoginMutation();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [activeDemoRole, setActiveDemoRole] = useState<string | null>(null);
+  const [isGooglePending, setIsGooglePending] = useState(false);
   const [feedback, setFeedback] = useState<FormFeedback | null>(() => {
     if (typeof window === "undefined") {
       return null;
@@ -188,6 +308,45 @@ export default function LoginPage() {
   const requestedRedirect = sanitizeLoginRedirectPath(
     searchParams.get("redirect"),
   );
+  const oauthError = searchParams.get("error");
+
+  async function submitLogin(value: LoginInput) {
+    setFeedback(null);
+    setVerificationEmail("");
+
+    try {
+      const payload: LoginInput = loginFormSchema.parse(value);
+      await loginMutation.mutateAsync(payload);
+
+      const role = getUserRole() ?? syncRoleFromAccessToken();
+      const target = resolvePostLoginTarget(requestedRedirect, role);
+
+      router.replace(target);
+      router.refresh();
+    } catch (error) {
+      const submittedEmail = value.email.trim();
+
+      if (submittedEmail && isEmailVerificationRequired(error)) {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(PENDING_VERIFY_EMAIL_KEY, submittedEmail);
+          window.sessionStorage.setItem(
+            VERIFY_EMAIL_NOTICE_KEY,
+            VERIFY_EMAIL_REQUIRED_NOTICE,
+          );
+        }
+
+        setVerificationEmail(submittedEmail);
+        setFeedback({
+          type: "error",
+          text: VERIFY_EMAIL_REQUIRED_NOTICE,
+        });
+        router.replace(buildVerifyEmailHref(submittedEmail));
+        return;
+      }
+
+      setFeedback({ type: "error", text: getApiErrorMessage(error) });
+    }
+  }
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -197,51 +356,99 @@ export default function LoginPage() {
     window.sessionStorage.removeItem(LOGIN_NOTICE_KEY);
   }, []);
 
+  useEffect(() => {
+    const oauthFeedback = getOAuthErrorFeedback(oauthError);
+
+    if (!oauthFeedback) {
+      return;
+    }
+
+    setIsGooglePending(false);
+    setFeedback(oauthFeedback);
+  }, [oauthError]);
+
+  useEffect(() => {
+    const oauthPayload = getOAuthHashPayload();
+
+    if (!oauthPayload) {
+      return;
+    }
+
+    removeLocationHash();
+
+    if (!oauthPayload.accessToken) {
+      setFeedback(getOAuthErrorFeedback("oauth_missing_token"));
+      setIsGooglePending(false);
+      return;
+    }
+
+    persistAuthSession({
+      accessToken: oauthPayload.accessToken,
+      refreshToken: oauthPayload.refreshToken ?? undefined,
+    });
+
+    const role = getUserRole() ?? syncRoleFromAccessToken();
+    const target = resolvePostLoginTarget(
+      oauthPayload.redirectPath || requestedRedirect,
+      role,
+    );
+
+    setIsGooglePending(false);
+    router.replace(target);
+    router.refresh();
+  }, [requestedRedirect, router]);
+
   const form = useForm({
     defaultValues: initialFormState,
     validators: {
       onSubmit: loginFormSchema,
     },
     onSubmit: async ({ value }) => {
-      setFeedback(null);
-      setVerificationEmail("");
-
-      try {
-        const payload: LoginInput = loginFormSchema.parse(value);
-        await loginMutation.mutateAsync(payload);
-
-        const role = getUserRole() ?? syncRoleFromAccessToken();
-        const target = requestedRedirect
-          ? resolvePostLoginTarget(requestedRedirect, role)
-          : resolveLoginRedirectTargetFromSession(DEFAULT_AUTH_REDIRECT_PATH);
-
-        router.replace(target);
-        router.refresh();
-      } catch (error) {
-        const submittedEmail = value.email.trim();
-
-        if (submittedEmail && isEmailVerificationRequired(error)) {
-          if (typeof window !== "undefined") {
-            window.localStorage.setItem(PENDING_VERIFY_EMAIL_KEY, submittedEmail);
-            window.sessionStorage.setItem(
-              VERIFY_EMAIL_NOTICE_KEY,
-              VERIFY_EMAIL_REQUIRED_NOTICE,
-            );
-          }
-
-          setVerificationEmail(submittedEmail);
-          setFeedback({
-            type: "error",
-            text: VERIFY_EMAIL_REQUIRED_NOTICE,
-          });
-          router.replace(buildVerifyEmailHref(submittedEmail));
-          return;
-        }
-
-        setFeedback({ type: "error", text: getApiErrorMessage(error) });
-      }
+      setActiveDemoRole(null);
+      await submitLogin(value);
     },
   });
+
+  async function handleDemoLogin(account: DemoAccount) {
+    setActiveDemoRole(account.role);
+    form.setFieldValue("email", account.email);
+    form.setFieldValue("password", account.password);
+
+    try {
+      await submitLogin({
+        email: account.email,
+        password: account.password,
+      });
+    } finally {
+      setActiveDemoRole(null);
+    }
+  }
+
+  function handleGoogleLogin() {
+    setFeedback(null);
+    setVerificationEmail("");
+    setActiveDemoRole(null);
+    setIsGooglePending(true);
+
+    try {
+      const googleLoginUrl = new URL(googleAuthEndpoint, window.location.origin);
+      googleLoginUrl.searchParams.set(
+        "redirect",
+        requestedRedirect || DEFAULT_AUTH_REDIRECT_PATH,
+      );
+
+      window.location.assign(googleLoginUrl.toString());
+    } catch (error) {
+      setFeedback({
+        type: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Google sign-in could not be started.",
+      });
+      setIsGooglePending(false);
+    }
+  }
 
   return (
     <main className="public-page-shell justify-center py-10 sm:py-12 lg:py-16">
@@ -327,6 +534,69 @@ export default function LoginPage() {
 
           <div className="mt-6">
             <AuthFeedback feedback={feedback} />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="mt-4 h-11 w-full rounded-xl border-slate-200 bg-white text-slate-900 shadow-sm hover:bg-slate-50"
+            disabled={loginMutation.isPending || isGooglePending}
+            onClick={() => {
+              void handleGoogleLogin();
+            }}
+          >
+            <Chrome className="size-4 text-slate-700" />
+            {isGooglePending ? "Starting Google..." : "Continue with Google"}
+          </Button>
+
+          <div className="mt-5 flex items-center gap-3">
+            <span className="h-px flex-1 bg-slate-200" />
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              or
+            </span>
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
+
+          <div className="mt-4 grid gap-3 rounded-[1.4rem] border border-emerald-200 bg-emerald-50/75 p-4">
+            <div>
+              <p className="text-sm font-semibold text-slate-950">
+                Demo login
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Use a prepared account to preview the deployed dashboard.
+              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {demoAccounts.map((account) => (
+                <Button
+                  key={account.role}
+                  type="button"
+                  variant="outline"
+                  className="h-auto min-h-16 w-full justify-start gap-3 whitespace-normal rounded-xl border-emerald-200 bg-white p-3 text-left hover:bg-emerald-50"
+                  disabled={loginMutation.isPending}
+                  onClick={() => {
+                    void handleDemoLogin(account);
+                  }}
+                >
+                  <account.icon className="size-5 shrink-0 text-emerald-700" />
+                  <span className="grid min-w-0 flex-1 gap-0.5">
+                    <span className="text-sm font-semibold text-slate-950">
+                      {activeDemoRole === account.role
+                        ? "Signing in..."
+                        : `${account.role} demo`}
+                    </span>
+                    <span className="truncate text-xs font-normal text-slate-500">
+                      {account.email}
+                    </span>
+                    <span className="text-xs font-normal leading-5 text-slate-600">
+                      {account.description}
+                    </span>
+                  </span>
+                  <ArrowRight className="ml-auto size-4 shrink-0 text-emerald-700" />
+                </Button>
+              ))}
+            </div>
           </div>
 
           {verificationEmail ? (

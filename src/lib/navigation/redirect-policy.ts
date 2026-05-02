@@ -135,9 +135,17 @@ export function resolvePostLoginTarget(
   redirectPathname: string | null | undefined,
   role: string | null | undefined,
 ): string {
-  void redirectPathname;
-  void role;
-  return APP_ROUTES.home;
+  const safeRedirectPath = sanitizeInternalPath(redirectPathname);
+
+  if (safeRedirectPath) {
+    const pathname = getPathnameFromInternalPath(safeRedirectPath);
+
+    if (!isAuthPath(pathname) && canRoleAccessPath(pathname, role)) {
+      return safeRedirectPath;
+    }
+  }
+
+  return resolveRoleDashboardTarget(role);
 }
 
 export function buildLoginHref(nextPath?: string | null): string {

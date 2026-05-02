@@ -198,10 +198,11 @@ Eco Spark uses a mixed server/client session model:
 
 ## Environment
 
-The frontend currently uses one required runtime variable:
+The frontend uses one required public runtime variable and one optional Google OAuth URL:
 
 ```bash
 NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api/v1
+NEXT_PUBLIC_GOOGLE_AUTH_URL=http://localhost:5000/api/v1/auth/login/google
 ```
 
 Reference:
@@ -211,8 +212,9 @@ Reference:
 Important notes:
 
 - The value must include the `/api/v1` suffix
-- `next.config.ts` rewrites `/api/v1/:path*` to this backend origin
+- `next.config.ts` rewrites `/api/v1/:path*` and `/api/auth/:path*` to this backend origin
 - The Axios client uses `/api/v1` in the browser and the external URL on the server
+- `NEXT_PUBLIC_GOOGLE_AUTH_URL` is optional; the login page falls back to the proxied Google login bridge, `/api/v1/auth/login/google`
 - Even though `src/config/env.ts` defines a fallback, you should still set `NEXT_PUBLIC_API_BASE_URL` explicitly in local and deployed environments so rewrites work correctly
 
 ## Setup Instructions
@@ -285,18 +287,20 @@ The project is suitable for Vercel or any Node-compatible hosting environment.
 - Build command: `pnpm build`
 - Start command: `pnpm start`
 
-### Required deployment environment variable
+### Deployment environment variables
 
 ```bash
 NEXT_PUBLIC_API_BASE_URL=https://YOUR_BACKEND_HOST/api/v1
+NEXT_PUBLIC_GOOGLE_AUTH_URL=https://YOUR_BACKEND_HOST/api/v1/auth/login/google
 ```
 
 ### Deployment considerations
 
 - The backend must allow the frontend origin in CORS configuration
 - Auth relies on cookies and credentialed requests, so cookie settings must match your deployment environment
-- The frontend rewrites `/api/v1/*`, so the backend base URL must be reachable from the deployed Next.js server
-- After updating `NEXT_PUBLIC_API_BASE_URL`, redeploy so the build picks up the new value
+- The frontend rewrites `/api/v1/*` and `/api/auth/*`, so the backend base URL must be reachable from the deployed Next.js server
+- Google OAuth must authorize the backend callback URL exactly: `https://YOUR_BACKEND_HOST/api/auth/callback/google`
+- After updating `NEXT_PUBLIC_API_BASE_URL` or `NEXT_PUBLIC_GOOGLE_AUTH_URL`, redeploy so the build picks up the new value
 
 ## Developer Conventions
 

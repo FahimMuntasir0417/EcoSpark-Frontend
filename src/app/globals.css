@@ -251,6 +251,45 @@
   }
 }
 
+@keyframes glorious-image-drift {
+  0% {
+    transform: scale(1.02) translate3d(0, 0, 0);
+  }
+  100% {
+    transform: scale(1.08) translate3d(-1.5%, -1%, 0);
+  }
+}
+
+@keyframes glorious-lattice-flow {
+  0% {
+    background-position:
+      0 0,
+      0 0;
+  }
+  100% {
+    background-position:
+      88px 88px,
+      -88px 88px;
+  }
+}
+
+@keyframes glorious-scan {
+  0% {
+    opacity: 0;
+    transform: translateX(-80%) skewX(-12deg);
+  }
+  28% {
+    opacity: 0.42;
+  }
+  58% {
+    opacity: 0.18;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(220%) skewX(-12deg);
+  }
+}
+
 @layer utilities {
   .public-page-shell {
     @apply mx-auto flex w-full max-w-7xl flex-1 flex-col gap-10 px-4 py-10 sm:px-6 lg:px-8 lg:py-14;
@@ -370,6 +409,87 @@
       color-mix(in oklch, var(--background) 86%, transparent) 28%,
       var(--background) 100%
     );
+  }
+
+  .glorious-section-image {
+    animation: glorious-image-drift 18s ease-in-out infinite alternate;
+    transform-origin: center;
+  }
+
+  .glorious-section-overlay-left,
+  .glorious-section-overlay-right,
+  .glorious-section-lattice,
+  .glorious-section-scan {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+  }
+
+  .glorious-section-overlay-left {
+    background: linear-gradient(
+      90deg,
+      oklch(0.13 0.035 166 / 94%) 0%,
+      oklch(0.13 0.035 166 / 82%) 42%,
+      oklch(0.13 0.035 166 / 36%) 72%,
+      oklch(0.13 0.035 166 / 18%) 100%
+    );
+  }
+
+  .glorious-section-overlay-right {
+    background: linear-gradient(
+      270deg,
+      oklch(0.13 0.035 166 / 94%) 0%,
+      oklch(0.13 0.035 166 / 82%) 42%,
+      oklch(0.13 0.035 166 / 36%) 72%,
+      oklch(0.13 0.035 166 / 18%) 100%
+    );
+  }
+
+  .glorious-section-lattice {
+    background-image:
+      linear-gradient(
+        to right,
+        oklch(1 0 0 / 10%) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        oklch(1 0 0 / 8%) 1px,
+        transparent 1px
+      );
+    background-size: 88px 88px;
+    mask-image: linear-gradient(180deg, black 0%, transparent 88%);
+    -webkit-mask-image: linear-gradient(180deg, black 0%, transparent 88%);
+    animation: glorious-lattice-flow 26s linear infinite;
+  }
+
+  .glorious-section-scan {
+    right: auto;
+    width: 42%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      oklch(0.78 0.13 84 / 18%) 38%,
+      oklch(0.78 0.12 206 / 22%) 52%,
+      transparent 100%
+    );
+    animation: glorious-scan 10s ease-in-out infinite;
+  }
+
+  .glorious-section-copy {
+    animation: rise 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @media (max-width: 767px) {
+    .glorious-section-overlay-left,
+    .glorious-section-overlay-right {
+      background: linear-gradient(
+        180deg,
+        oklch(0.13 0.035 166 / 92%) 0%,
+        oklch(0.13 0.035 166 / 84%) 58%,
+        oklch(0.13 0.035 166 / 74%) 100%
+      );
+    }
   }
 
   .theme-compat-scope :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]) {
@@ -534,7 +654,11 @@
     .home-trace-lines,
     .home-page-grid,
     .home-page-lanes,
-    .home-page-sweep {
+    .home-page-sweep,
+    .glorious-section-image,
+    .glorious-section-lattice,
+    .glorious-section-scan,
+    .glorious-section-copy {
       animation: none;
     }
   }
