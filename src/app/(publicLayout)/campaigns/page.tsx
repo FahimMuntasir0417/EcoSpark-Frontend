@@ -213,8 +213,8 @@ export default function CampaignsPage() {
     <main className="public-page-shell">
       <section className="surface-card overflow-hidden">
         <div className="relative overflow-hidden p-7 lg:p-8">
-          <div className="absolute inset-y-0 right-0 hidden w-2/5 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.22),transparent_58%),linear-gradient(135deg,rgba(15,23,42,1),rgba(8,47,73,0.94))] lg:block" />
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
+          <div className="absolute inset-y-0 right-0 hidden w-2/5 bg-[radial-gradient(circle_at_top_right,rgba(45,212,191,0.22),transparent_58%),linear-gradient(135deg,rgba(15,23,42,1),rgba(8,47,73,0.94))] xl:block" />
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
           <div className="space-y-5">
             <DirectoryBadge
               icon={Sparkles}
@@ -431,7 +431,7 @@ export default function CampaignsPage() {
               </div>
 
               <div className="space-y-6 p-6">
-                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_19rem]">
                   <div className="space-y-4">
                     <div>
                       <p className="section-kicker">Campaign Brief</p>

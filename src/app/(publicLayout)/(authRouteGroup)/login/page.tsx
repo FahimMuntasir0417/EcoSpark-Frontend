@@ -452,7 +452,7 @@ export default function LoginPage() {
 
   return (
     <main className="public-page-shell justify-center py-10 sm:py-12 lg:py-16">
-      <section className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1.08fr)_30rem]">
+      <section className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,1.08fr)_30rem]">
         <article className="relative overflow-hidden rounded-[2rem] border border-slate-200/90 bg-[linear-gradient(160deg,rgba(255,255,255,0.97),rgba(248,250,252,0.94))] p-6 shadow-[0_26px_70px_-42px_rgba(15,23,42,0.38)] sm:p-8 lg:p-10">
           <div className="pointer-events-none absolute -left-16 top-10 size-48 rounded-full bg-[radial-gradient(circle,rgba(14,165,233,0.16),rgba(14,165,233,0)_72%)]" />
           <div className="pointer-events-none absolute right-0 top-0 h-px w-full bg-[linear-gradient(90deg,transparent,rgba(14,165,233,0.9),rgba(16,185,129,0.9),transparent)]" />
@@ -475,7 +475,7 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-3">
                 {platformHighlights.map((highlight) => (
                   <div
                     key={highlight.title}

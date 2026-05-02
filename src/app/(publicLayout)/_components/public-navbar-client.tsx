@@ -298,7 +298,7 @@ function DesktopNavLink({
     <Link
       href={href}
       className={cn(
-        "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        "whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors",
         active
           ? "bg-primary text-primary-foreground"
           : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -534,7 +534,7 @@ export function PublicNavbarClient({
             </span>
           </Link>
 
-          <div className="hidden flex-1 items-center justify-center lg:flex">
+          <div className="hidden min-w-0 flex-1 items-center justify-center xl:flex">
             <nav className="flex items-center gap-1" aria-label="Primary">
               {primaryLinks.map((link) => (
                 <DesktopNavLink
@@ -552,7 +552,7 @@ export function PublicNavbarClient({
                     setResourcesOpen((open) => !open);
                   }}
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    "inline-flex items-center gap-1 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors",
                     resourceLinks.some((link) => isPathActive(pathname, link.href))
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -571,7 +571,7 @@ export function PublicNavbarClient({
 
                 <div
                   className={cn(
-                    "absolute left-0 top-[calc(100%+0.75rem)] grid w-[30rem] grid-cols-2 gap-2 rounded-lg border border-border bg-popover p-2 text-popover-foreground shadow-xl transition-all",
+                    "absolute right-0 top-[calc(100%+0.75rem)] grid w-[min(30rem,calc(100vw-2rem))] grid-cols-2 gap-2 rounded-lg border border-border bg-popover p-2 text-popover-foreground shadow-xl transition-all",
                     resourcesOpen
                       ? "translate-y-0 opacity-100"
                       : "pointer-events-none -translate-y-1 opacity-0",
@@ -605,7 +605,7 @@ export function PublicNavbarClient({
             </nav>
           </div>
 
-          <div className="hidden items-center gap-2 lg:flex">
+          <div className="hidden items-center gap-2 xl:flex">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
 
             {isAuthenticated && role && dashboardHref ? (
@@ -724,7 +724,7 @@ export function PublicNavbarClient({
             )}
           </div>
 
-          <div className="flex items-center gap-2 lg:hidden">
+          <div className="flex items-center gap-2 xl:hidden">
             <ThemeToggle theme={theme} onToggle={toggleTheme} compact />
             <button
               type="button"
@@ -752,7 +752,7 @@ export function PublicNavbarClient({
       {mobileOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-30 bg-foreground/20 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-foreground/20 backdrop-blur-sm xl:hidden"
           onClick={closeMobileMenu}
           aria-label="Close mobile navigation"
         />
@@ -760,7 +760,7 @@ export function PublicNavbarClient({
 
       <div
         className={cn(
-          "fixed inset-x-4 top-[4.75rem] z-40 max-h-[calc(100svh-6rem)] overflow-y-auto rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-xl transition-all lg:hidden sm:inset-x-6",
+          "fixed inset-x-4 top-[4.75rem] z-40 max-h-[calc(100svh-6rem)] overflow-y-auto rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-xl transition-all xl:hidden sm:inset-x-6",
           mobileOpen
             ? "translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-3 opacity-0",

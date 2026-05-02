@@ -217,7 +217,7 @@ export default function CommunityPage() {
   return (
     <main className="public-page-shell">
       <section className="surface-card overflow-hidden">
-        <div className="grid gap-6 p-7 lg:grid-cols-[minmax(0,1.1fr)_minmax(19rem,0.9fr)] lg:p-8">
+        <div className="grid gap-6 p-7 lg:p-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(19rem,0.9fr)]">
           <div className="space-y-5">
             <DirectoryBadge
               icon={Sparkles}
@@ -468,7 +468,7 @@ export default function CommunityPage() {
                     </section>
                   ) : null}
 
-                  <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
+                  <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_19rem]">
                     <div className="space-y-4">
                       <div>
                         <p className="section-kicker">Implementation Summary</p>

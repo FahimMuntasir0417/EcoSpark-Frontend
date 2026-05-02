@@ -120,12 +120,12 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
-    @apply font-sans;
+    @apply max-w-full overflow-x-clip font-sans;
     scroll-padding-top: 6rem;
+  }
+  body {
+    @apply max-w-full overflow-x-clip bg-background text-foreground;
   }
 }
 
@@ -292,7 +292,7 @@
 
 @layer utilities {
   .public-page-shell {
-    @apply mx-auto flex w-full max-w-7xl flex-1 flex-col gap-10 px-4 py-10 sm:px-6 lg:px-8 lg:py-14;
+    @apply mx-auto flex min-w-0 w-full max-w-7xl flex-1 flex-col gap-10 overflow-x-clip px-4 py-10 sm:px-6 lg:px-8 lg:py-14;
   }
 
   .surface-card {
@@ -308,11 +308,11 @@
   }
 
   .section-title {
-    @apply text-3xl font-semibold tracking-tight text-foreground sm:text-4xl;
+    @apply break-words text-3xl font-semibold tracking-tight text-foreground sm:text-4xl;
   }
 
   .section-copy {
-    @apply max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base;
+    @apply max-w-3xl break-words text-sm leading-7 text-muted-foreground sm:text-base;
   }
 
   .home-animated-grid {

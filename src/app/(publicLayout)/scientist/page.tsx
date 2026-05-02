@@ -383,7 +383,7 @@ export default function ScientistPage() {
   return (
     <main className="public-page-shell">
       <section className="surface-card overflow-hidden">
-        <div className="grid gap-6 p-7 lg:grid-cols-[minmax(0,1.1fr)_minmax(19rem,0.9fr)] lg:p-8">
+        <div className="grid gap-6 p-7 lg:p-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(19rem,0.9fr)]">
           <div className="space-y-5">
             <DirectoryBadge
               icon={Sparkles}
@@ -546,8 +546,8 @@ export default function ScientistPage() {
           {pageScientists.map((scientist) => (
             <article key={scientist.id} className="surface-card overflow-hidden">
               <div className="border-b border-emerald-100 bg-[linear-gradient(135deg,rgba(236,253,245,0.98),rgba(239,246,255,0.96))] px-6 py-6">
-                <div className="grid gap-5 lg:grid-cols-[auto_minmax(0,1fr)_18rem] lg:items-start">
-                  <div className="flex justify-center lg:justify-start">
+                <div className="grid gap-5 xl:grid-cols-[auto_minmax(0,1fr)_18rem] xl:items-start">
+                  <div className="flex justify-center xl:justify-start">
                     <div className="relative size-24 overflow-hidden rounded-[1.6rem] border border-emerald-200 bg-white shadow-sm">
                       {getScientistProfilePhoto(scientist) ? (
                         <img
@@ -615,7 +615,7 @@ export default function ScientistPage() {
               </div>
 
               <div className="space-y-6 p-6">
-                <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_19rem]">
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_19rem]">
                   <div className="space-y-4">
                     <div>
                       <p className="section-kicker">Profile Summary</p>

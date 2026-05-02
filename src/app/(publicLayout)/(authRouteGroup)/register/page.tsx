@@ -99,7 +99,7 @@ export default function RegisterPage() {
 
   return (
     <main className="public-page-shell justify-center py-10 sm:py-12 lg:py-16">
-      <section className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.03fr)_30rem] xl:grid-cols-[minmax(0,1.05fr)_32rem]">
+      <section className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_32rem]">
         <article className="relative overflow-hidden rounded-[2rem] border border-slate-200/90 bg-[linear-gradient(160deg,rgba(255,255,255,0.98),rgba(240,253,250,0.92)_48%,rgba(248,250,252,0.96)_100%)] p-6 shadow-[0_26px_70px_-42px_rgba(15,23,42,0.38)] sm:p-8 lg:p-10">
           <div className="pointer-events-none absolute -left-16 top-8 size-52 rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.18),rgba(16,185,129,0)_72%)]" />
           <div className="pointer-events-none absolute right-[-3rem] top-16 size-48 rounded-full bg-[radial-gradient(circle,rgba(14,165,233,0.15),rgba(14,165,233,0)_74%)]" />
