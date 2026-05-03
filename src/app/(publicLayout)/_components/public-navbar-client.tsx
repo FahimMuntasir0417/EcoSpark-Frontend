@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLogoutMutation } from "@/features/auth";
 import { type UserRole } from "@/lib/authUtils";
@@ -49,6 +49,11 @@ type PublicNavLink = {
 };
 
 type ThemeMode = "light" | "dark";
+
+const THEME_STORAGE_KEY = "eco-spark-theme";
+const THEME_CHANGE_EVENT = "eco-spark-theme-change";
+const DARK_COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)";
+const DEFAULT_THEME: ThemeMode = "light";
 
 const primaryLinks: PublicNavLink[] = [
   {
@@ -249,9 +254,74 @@ function isPathActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function setDocumentTheme(mode: ThemeMode) {
+function isThemeMode(value: string | null): value is ThemeMode {
+  return value === "dark" || value === "light";
+}
+
+function getStoredTheme(): ThemeMode | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+
+  return isThemeMode(storedTheme) ? storedTheme : null;
+}
+
+function getPreferredTheme(): ThemeMode {
+  if (typeof window === "undefined") {
+    return DEFAULT_THEME;
+  }
+
+  return window.matchMedia(DARK_COLOR_SCHEME_QUERY).matches ? "dark" : "light";
+}
+
+function getThemeSnapshot(): ThemeMode {
+  return getStoredTheme() ?? getPreferredTheme();
+}
+
+function getServerThemeSnapshot(): ThemeMode {
+  return DEFAULT_THEME;
+}
+
+function applyDocumentTheme(mode: ThemeMode) {
+  if (typeof document === "undefined") {
+    return;
+  }
+
   document.documentElement.classList.toggle("dark", mode === "dark");
-  localStorage.setItem("eco-spark-theme", mode);
+}
+
+function subscribeToThemeChanges(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const mediaQuery = window.matchMedia(DARK_COLOR_SCHEME_QUERY);
+  const handleChange = () => {
+    onStoreChange();
+  };
+
+  window.addEventListener("storage", handleChange);
+  window.addEventListener(THEME_CHANGE_EVENT, handleChange);
+  mediaQuery.addEventListener("change", handleChange);
+
+  return () => {
+    window.removeEventListener("storage", handleChange);
+    window.removeEventListener(THEME_CHANGE_EVENT, handleChange);
+    mediaQuery.removeEventListener("change", handleChange);
+  };
+}
+
+function setDocumentTheme(mode: ThemeMode) {
+  applyDocumentTheme(mode);
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(THEME_STORAGE_KEY, mode);
+  window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
 }
 
 function ThemeToggle({
@@ -271,7 +341,7 @@ function ThemeToggle({
       onClick={onToggle}
       className={cn(
         "inline-flex items-center justify-center rounded-md border border-border bg-card text-foreground shadow-sm transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
-        compact ? "size-10" : "h-10 gap-2 px-3 text-sm font-medium",
+        compact ? "size-10" : "h-10 gap-2 px-3 text-base font-semibold",
       )}
       aria-label={
         theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
@@ -298,7 +368,7 @@ function DesktopNavLink({
     <Link
       href={href}
       className={cn(
-        "whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        "whitespace-nowrap rounded-md px-4 py-2 text-base font-semibold transition-colors",
         active
           ? "bg-primary text-primary-foreground"
           : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -343,6 +413,7 @@ function MobileNavLink({
       >
         <Icon className="size-4" />
       </span>
+
       <span className="min-w-0">
         <span className="block text-sm font-semibold">{label}</span>
         <span
@@ -366,9 +437,15 @@ export function PublicNavbarClient({
   const pathname = usePathname();
   const router = useRouter();
   const logoutMutation = useLogoutMutation();
+
   const resourcesMenuRef = useRef<HTMLDivElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
-  const [theme, setTheme] = useState<ThemeMode>("light");
+
+  const theme = useSyncExternalStore(
+    subscribeToThemeChanges,
+    getThemeSnapshot,
+    getServerThemeSnapshot,
+  );
   const [resourcesOpen, setResourcesOpen] = useState(false);
   const [profileMenuState, setProfileMenuState] = useState(() => ({
     open: false,
@@ -379,6 +456,7 @@ export function PublicNavbarClient({
     pathname,
   }));
   const [logoutError, setLogoutError] = useState<string | null>(null);
+
   const meQuery = useQuery({
     queryKey: ["users", "me"],
     queryFn: () => userService.getMe(),
@@ -386,35 +464,30 @@ export function PublicNavbarClient({
     staleTime: 60_000,
     retry: false,
   });
+
   const meDataCandidate = meQuery.data?.data;
   const meRecord =
     meDataCandidate && typeof meDataCandidate === "object"
       ? (meDataCandidate as Record<string, unknown>)
       : null;
+
   const displayName =
     getOptionalString(meRecord?.name) ??
     (role ? formatRoleLabel(role) : "Eco Spark user");
+
   const displayEmail = getOptionalString(meRecord?.email);
   const avatarUrl = getAvatarUrl(meRecord);
   const avatarInitials = getInitials(displayName);
+
   const profileMenuOpen =
     profileMenuState.open && profileMenuState.pathname === pathname;
+
   const mobileOpen =
     mobileMenuState.open && mobileMenuState.pathname === pathname;
 
   useEffect(() => {
-    const storedTheme = localStorage.getItem("eco-spark-theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const initialTheme: ThemeMode =
-      storedTheme === "dark" || storedTheme === "light"
-        ? storedTheme
-        : prefersDark
-          ? "dark"
-          : "light";
-
-    setTheme(initialTheme);
-    document.documentElement.classList.toggle("dark", initialTheme === "dark");
-  }, []);
+    applyDocumentTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     if (!profileMenuOpen && !resourcesOpen) {
@@ -431,10 +504,7 @@ export function PublicNavbarClient({
         setResourcesOpen(false);
       }
 
-      if (
-        profileMenuRef.current &&
-        !profileMenuRef.current.contains(target)
-      ) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(target)) {
         setProfileMenuState({
           open: false,
           pathname,
@@ -496,11 +566,9 @@ export function PublicNavbarClient({
   };
 
   const toggleTheme = () => {
-    setTheme((currentTheme) => {
-      const nextTheme = currentTheme === "dark" ? "light" : "dark";
-      setDocumentTheme(nextTheme);
-      return nextTheme;
-    });
+    const nextTheme = theme === "dark" ? "light" : "dark";
+
+    setDocumentTheme(nextTheme);
   };
 
   const handleLogout = async () => {
@@ -518,12 +586,13 @@ export function PublicNavbarClient({
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-xl">
-        <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-background/60 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_30px_rgba(0,0,0,0.06)] supports-[backdrop-filter]:bg-background/55">
+        <div className="mx-auto flex min-h-16 w-full max-w-screen-2xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <Link href="/" className="flex min-w-0 items-center gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground shadow-sm">
               ES
             </span>
+
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold text-foreground">
                 Eco Spark
@@ -534,7 +603,7 @@ export function PublicNavbarClient({
             </span>
           </Link>
 
-          <div className="hidden min-w-0 flex-1 items-center justify-center xl:flex">
+          <div className="hidden min-w-0 flex-1 items-center justify-center 2xl:flex">
             <nav className="flex items-center gap-1" aria-label="Primary">
               {primaryLinks.map((link) => (
                 <DesktopNavLink
@@ -552,8 +621,10 @@ export function PublicNavbarClient({
                     setResourcesOpen((open) => !open);
                   }}
                   className={cn(
-                    "inline-flex items-center gap-1 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                    resourceLinks.some((link) => isPathActive(pathname, link.href))
+                    "inline-flex items-center gap-1 whitespace-nowrap rounded-md px-4 py-2 text-base font-semibold transition-colors",
+                    resourceLinks.some((link) =>
+                      isPathActive(pathname, link.href),
+                    )
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
@@ -590,6 +661,7 @@ export function PublicNavbarClient({
                       <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
                         <link.icon className="size-4" />
                       </span>
+
                       <span>
                         <span className="block text-sm font-semibold">
                           {link.label}
@@ -605,14 +677,14 @@ export function PublicNavbarClient({
             </nav>
           </div>
 
-          <div className="hidden items-center gap-2 xl:flex">
+          <div className="hidden items-center gap-2 2xl:flex">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
 
             {isAuthenticated && role && dashboardHref ? (
               <>
                 <Link
                   href={dashboardHref}
-                  className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   <LayoutDashboard className="size-4" />
                   Dashboard
@@ -636,7 +708,7 @@ export function PublicNavbarClient({
                         };
                       });
                     }}
-                    className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-card px-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
+                    className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-card px-3 text-base font-semibold text-foreground shadow-sm transition-colors hover:bg-muted"
                     aria-expanded={profileMenuOpen}
                     aria-haspopup="menu"
                     aria-label="Open profile menu"
@@ -652,7 +724,9 @@ export function PublicNavbarClient({
                         avatarInitials
                       )}
                     </span>
-                    <span className="max-w-28 truncate">{displayName}</span>
+
+                    <span className="max-w-32 truncate">{displayName}</span>
+
                     <ChevronDown
                       className={cn(
                         "size-4 text-muted-foreground transition-transform",
@@ -699,7 +773,9 @@ export function PublicNavbarClient({
                         className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <LogOut className="size-4" />
-                        {logoutMutation.isPending ? "Logging out..." : "Log out"}
+                        {logoutMutation.isPending
+                          ? "Logging out..."
+                          : "Log out"}
                       </button>
                     </div>
                   </div>
@@ -709,13 +785,14 @@ export function PublicNavbarClient({
               <>
                 <Link
                   href="/login"
-                  className="inline-flex h-10 items-center rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
+                  className="inline-flex h-10 items-center rounded-md border border-border bg-card px-4 text-base font-semibold text-foreground shadow-sm transition-colors hover:bg-muted"
                 >
                   Login
                 </Link>
+
                 <Link
                   href="/register"
-                  className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   Get Started
                   <ArrowRight className="size-4" />
@@ -724,8 +801,9 @@ export function PublicNavbarClient({
             )}
           </div>
 
-          <div className="flex items-center gap-2 xl:hidden">
+          <div className="flex items-center gap-2 2xl:hidden">
             <ThemeToggle theme={theme} onToggle={toggleTheme} compact />
+
             <button
               type="button"
               onClick={toggleMobileMenu}
@@ -735,14 +813,18 @@ export function PublicNavbarClient({
                 mobileOpen ? "Close navigation menu" : "Open navigation menu"
               }
             >
-              {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+              {mobileOpen ? (
+                <X className="size-5" />
+              ) : (
+                <Menu className="size-5" />
+              )}
             </button>
           </div>
         </div>
       </header>
 
       {logoutError ? (
-        <div className="mx-auto mt-3 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto mt-3 w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">
           <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {logoutError}
           </p>
@@ -752,7 +834,7 @@ export function PublicNavbarClient({
       {mobileOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-30 bg-foreground/20 backdrop-blur-sm xl:hidden"
+          className="fixed inset-0 z-30 bg-foreground/20 backdrop-blur-sm 2xl:hidden"
           onClick={closeMobileMenu}
           aria-label="Close mobile navigation"
         />
@@ -760,7 +842,7 @@ export function PublicNavbarClient({
 
       <div
         className={cn(
-          "fixed inset-x-4 top-[4.75rem] z-40 max-h-[calc(100svh-6rem)] overflow-y-auto rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-xl transition-all xl:hidden sm:inset-x-6",
+          "fixed inset-x-4 top-[4.75rem] z-40 max-h-[calc(100svh-6rem)] overflow-y-auto rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-xl transition-all 2xl:hidden sm:inset-x-6",
           mobileOpen
             ? "translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-3 opacity-0",
@@ -771,11 +853,13 @@ export function PublicNavbarClient({
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
               Eco Spark
             </p>
+
             <p className="mt-2 text-base font-semibold">
               {isAuthenticated && role
                 ? `${formatRoleLabel(role)} workspace`
                 : "Move from idea discovery to adoption"}
             </p>
+
             <p className="mt-1 text-sm text-muted-foreground">
               {isAuthenticated
                 ? "Use dashboard routes, account tools, and public discovery from one menu."
@@ -787,6 +871,7 @@ export function PublicNavbarClient({
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               Explore
             </p>
+
             <div className="grid gap-2">
               {primaryLinks.map((link) => (
                 <MobileNavLink
@@ -803,6 +888,7 @@ export function PublicNavbarClient({
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               Resources
             </p>
+
             <div className="grid gap-2">
               {resourceLinks.map((link) => (
                 <MobileNavLink
@@ -830,6 +916,7 @@ export function PublicNavbarClient({
                   pathname={pathname}
                   onNavigate={closeMobileMenu}
                 />
+
                 {accountLinks.map((link) => (
                   <MobileNavLink
                     key={link.href}
@@ -838,6 +925,7 @@ export function PublicNavbarClient({
                     onNavigate={closeMobileMenu}
                   />
                 ))}
+
                 <button
                   type="button"
                   onClick={handleLogout}

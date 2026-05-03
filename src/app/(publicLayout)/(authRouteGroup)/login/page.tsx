@@ -479,7 +479,7 @@ export default function LoginPage() {
                 {platformHighlights.map((highlight) => (
                   <div
                     key={highlight.title}
-                    className="rounded-[1.4rem] border border-slate-200/90 bg-white/75 p-4 backdrop-blur"
+                    className="rounded-[1.4rem] border border-slate-200/90  p-4 backdrop-blur"
                   >
                     <p className="text-sm font-semibold text-slate-950">{highlight.title}</p>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -558,7 +558,7 @@ export default function LoginPage() {
             <span className="h-px flex-1 bg-slate-200" />
           </div>
 
-          <div className="mt-4 grid gap-3 rounded-[1.4rem] border border-emerald-200 bg-emerald-50/75 p-4">
+          <div className="mt-4 grid gap-3 rounded-[1.4rem] border border-emerald-200 p-4">
             <div>
               <p className="text-sm font-semibold text-slate-950">
                 Demo login

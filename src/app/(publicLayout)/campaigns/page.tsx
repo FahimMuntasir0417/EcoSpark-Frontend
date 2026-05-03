@@ -249,7 +249,7 @@ export default function CampaignsPage() {
             </div>
           </div>
 
-          <div className="relative rounded-[1.9rem] border border-slate-800/40 bg-slate-950 p-5 text-white shadow-[0_30px_80px_-45px_rgba(15,23,42,0.85)]">
+          <div className="relative rounded-[1.9rem] border border-slate-800/40 !bg-slate-950 p-5 text-white shadow-[0_30px_80px_-45px_rgba(15,23,42,0.85)]">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
               Live overview
             </p>

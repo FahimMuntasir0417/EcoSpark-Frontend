@@ -241,10 +241,10 @@ export default function CommunityPage() {
             </div>
 
             <div className="flex flex-wrap gap-3 text-sm text-slate-600">
-              <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-900">
+              <span className="rounded-full border border-amber-200 bg-amber-550 px-3 py-1.5 text-amber-100">
                 Featured reports lead the directory
               </span>
-              <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-rose-900">
+              <span className="rounded-full border border-rose-200 bg-rose-550 px-3 py-1.5 text-rose-100">
                 Two reports per page
               </span>
             </div>

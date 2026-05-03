@@ -72,7 +72,11 @@ const publicRouteItems: RouteItem[] = [
 const authRouteItems: RouteItem[] = [
   { label: "Login", href: "/login", detail: "Authenticated entry" },
   { label: "Register", href: "/register", detail: "Account creation" },
-  { label: "Verify email", href: "/verify-email", detail: "Email verification" },
+  {
+    label: "Verify email",
+    href: "/verify-email",
+    detail: "Email verification",
+  },
   {
     label: "Forgot password",
     href: "/forgot-password",
@@ -237,6 +241,58 @@ function requireRouteByHref(routes: RouteItem[], href: string) {
   }
 
   return route;
+}
+
+const cardVariants = [
+  {
+    card: "border-emerald-300/60 bg-emerald-50/85 dark:border-emerald-400/25 dark:bg-emerald-950/35",
+    icon: "bg-emerald-600 text-white dark:bg-emerald-400 dark:text-emerald-950",
+  },
+  {
+    card: "border-sky-300/60 bg-sky-50/85 dark:border-sky-400/25 dark:bg-sky-950/35",
+    icon: "bg-sky-600 text-white dark:bg-sky-400 dark:text-sky-950",
+  },
+  {
+    card: "border-amber-300/60 bg-amber-50/85 dark:border-amber-400/25 dark:bg-amber-950/35",
+    icon: "bg-amber-500 text-white dark:bg-amber-300 dark:text-amber-950",
+  },
+  {
+    card: "border-teal-300/60 bg-teal-50/85 dark:border-teal-400/25 dark:bg-teal-950/35",
+    icon: "bg-teal-600 text-white dark:bg-teal-400 dark:text-teal-950",
+  },
+  {
+    card: "border-cyan-300/60 bg-cyan-50/85 dark:border-cyan-400/25 dark:bg-cyan-950/35",
+    icon: "bg-cyan-600 text-white dark:bg-cyan-400 dark:text-cyan-950",
+  },
+  {
+    card: "border-lime-300/60 bg-lime-50/85 dark:border-lime-400/25 dark:bg-lime-950/35",
+    icon: "bg-lime-600 text-white dark:bg-lime-300 dark:text-lime-950",
+  },
+  {
+    card: "border-violet-300/60 bg-violet-50/85 dark:border-violet-400/25 dark:bg-violet-950/35",
+    icon: "bg-violet-600 text-white dark:bg-violet-400 dark:text-violet-950",
+  },
+  {
+    card: "border-rose-300/60 bg-rose-50/85 dark:border-rose-400/25 dark:bg-rose-950/35",
+    icon: "bg-rose-600 text-white dark:bg-rose-400 dark:text-rose-950",
+  },
+];
+
+function hashString(value: string) {
+  let hash = 0;
+
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+
+  return Math.abs(hash);
+}
+
+function getStableRandomVariant(seed: string, index: number) {
+  const hash = hashString(`${seed}-${index}`);
+
+  return cardVariants[hash % cardVariants.length];
 }
 
 const serviceDomains = [
@@ -524,7 +580,11 @@ const gloriousSections: ImageStorySection[] = [
       },
     ],
     routes: innovationLabRoutes,
-    highlights: [architectureItems[0], architectureItems[1], governanceItems[1]],
+    highlights: [
+      architectureItems[0],
+      architectureItems[1],
+      governanceItems[1],
+    ],
     primaryAction: requireRouteByHref(
       scientistWorkspaceRoutes,
       "/scientist/dashboard/create-idea",
@@ -606,14 +666,29 @@ function SectionHeading({
   );
 }
 
-function StandardCard({ item }: { item: IconCard }) {
+function StandardCard({
+  item,
+  index = 0,
+  seed = "standard-card",
+}: {
+  item: IconCard;
+  index?: number;
+  seed?: string;
+}) {
+  const variant = getStableRandomVariant(`${seed}-${item.title}`, index);
+
   return (
-    <article className="surface-card grid h-full gap-4 p-5">
-      <span className="flex size-10 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+    <article
+      className={`grid h-full gap-4 rounded-lg border p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${variant.card}`}
+    >
+      <span
+        className={`flex size-10 items-center justify-center rounded-md shadow-sm ${variant.icon}`}
+      >
         <item.icon className="size-5" />
       </span>
+
       <div>
-        <h3 className="text-lg font-semibold">{item.title}</h3>
+        <h3 className="text-lg font-semibold text-foreground">{item.title}</h3>
         <p className="mt-2 text-sm leading-7 text-muted-foreground">
           {item.description}
         </p>
@@ -622,19 +697,32 @@ function StandardCard({ item }: { item: IconCard }) {
   );
 }
 
-function RouteCard({ route }: { route: RouteItem }) {
+function RouteCard({
+  route,
+  index = 0,
+  seed = "route-card",
+}: {
+  route: RouteItem;
+  index?: number;
+  seed?: string;
+}) {
+  const variant = getStableRandomVariant(`${seed}-${route.href}`, index);
+
   return (
     <Link
       href={route.href}
-      className="surface-card flex h-full items-center justify-between gap-4 p-4 transition-colors hover:bg-muted"
+      className={`flex h-full items-center justify-between gap-4 rounded-lg border p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${variant.card}`}
     >
       <span>
-        <span className="block text-sm font-semibold">{route.label}</span>
+        <span className="block text-sm font-semibold text-foreground">
+          {route.label}
+        </span>
         <span className="mt-1 block text-xs text-muted-foreground">
           {route.detail}
         </span>
       </span>
-      <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+
+      <ArrowRight className="size-4 shrink-0 text-primary" />
     </Link>
   );
 }
@@ -643,7 +731,7 @@ function RoutePill({ route }: { route: RouteItem }) {
   return (
     <Link
       href={route.href}
-      className="rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      className="rounded-md border border-border/70 bg-background/70 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
     >
       {route.label}
     </Link>
@@ -676,6 +764,7 @@ function ImageBackedSection({ section }: { section: ImageStorySection }) {
         sizes="(max-width: 1024px) 100vw, 1280px"
         className="glorious-section-image object-cover"
       />
+
       <div aria-hidden="true" className={overlayClassName} />
       <div aria-hidden="true" className="glorious-section-lattice" />
       <div aria-hidden="true" className="glorious-section-scan" />
@@ -690,9 +779,11 @@ function ImageBackedSection({ section }: { section: ImageStorySection }) {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
               {section.kicker}
             </p>
+
             <h2 className="max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
               {section.title}
             </h2>
+
             <p className="max-w-2xl text-sm leading-7 text-white/80 sm:text-base">
               {section.description}
             </p>
@@ -707,9 +798,11 @@ function ImageBackedSection({ section }: { section: ImageStorySection }) {
                 <p className="text-3xl font-semibold tracking-tight text-white">
                   {metric.value}
                 </p>
+
                 <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-accent">
                   {metric.label}
                 </p>
+
                 <p className="mt-2 text-xs leading-5 text-white/70">
                   {metric.detail}
                 </p>
@@ -726,7 +819,9 @@ function ImageBackedSection({ section }: { section: ImageStorySection }) {
                 <span className="flex size-9 items-center justify-center rounded-md bg-white text-foreground">
                   <item.icon className="size-4" />
                 </span>
+
                 <h3 className="mt-3 text-sm font-semibold">{item.title}</h3>
+
                 <p className="mt-2 line-clamp-3 text-xs leading-5 text-white/70">
                   {item.description}
                 </p>
@@ -748,6 +843,7 @@ function ImageBackedSection({ section }: { section: ImageStorySection }) {
               {section.primaryAction.label}
               <ArrowRight className="size-4" />
             </Link>
+
             <Link
               href={section.secondaryAction.href}
               className="inline-flex items-center gap-2 rounded-md border border-white/30 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/20"
@@ -784,20 +880,36 @@ export default function Home() {
 
       <main className="public-page-shell relative z-10">
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {platformMetrics.map((metric) => (
-            <article key={metric.label} className="surface-card p-5">
-              <p className="text-4xl font-semibold tracking-tight text-primary">
-                {metric.value}
-              </p>
-              <p className="mt-3 text-sm font-semibold uppercase tracking-[0.14em]">
-                {metric.label}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {metric.detail}
-              </p>
-            </article>
-          ))}
+          {platformMetrics.map((metric, index) => {
+            const variant = getStableRandomVariant(
+              `platform-metrics-${metric.label}`,
+              index,
+            );
+
+            return (
+              <article
+                key={metric.label}
+                className={`rounded-lg border p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${variant.card}`}
+              >
+                <p className="text-4xl font-semibold tracking-tight text-primary">
+                  {metric.value}
+                </p>
+
+                <p className="mt-3 text-sm font-semibold uppercase tracking-[0.14em] text-foreground">
+                  {metric.label}
+                </p>
+
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {metric.detail}
+                </p>
+              </article>
+            );
+          })}
         </section>
+
+        {gloriousSections.map((section) => (
+          <ImageBackedSection key={section.title} section={section} />
+        ))}
 
         <section className="grid gap-5">
           <SectionHeading
@@ -805,9 +917,15 @@ export default function Home() {
             title="Every public home section points to a real route."
             description="These links are the actual public pages available in this frontend, including the newly added company, support, and legal pages."
           />
+
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {publicRouteItems.map((route) => (
-              <RouteCard key={route.href} route={route} />
+            {publicRouteItems.map((route, index) => (
+              <RouteCard
+                key={route.href}
+                route={route}
+                index={index}
+                seed="public-routes"
+              />
             ))}
           </div>
         </section>
@@ -818,9 +936,15 @@ export default function Home() {
             title="Authentication and recovery are shown as first-class flows."
             description="The project includes registration, email verification, login, forgot password, and reset password routes."
           />
+
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {authRouteItems.map((route) => (
-              <RouteCard key={route.href} route={route} />
+            {authRouteItems.map((route, index) => (
+              <RouteCard
+                key={route.href}
+                route={route}
+                index={index}
+                seed="auth-routes"
+              />
             ))}
           </div>
         </section>
@@ -831,26 +955,45 @@ export default function Home() {
             title="Member, scientist, and admin routes are mapped from the app."
             description="These dashboard groups reflect the protected route folders and role defaults already present in the project."
           />
+
           <div className="grid gap-4 lg:grid-cols-3">
-            {roleWorkspaceGroups.map((group) => (
-              <article key={group.title} className="surface-card p-5">
-                <span className="flex size-10 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-                  <group.icon className="size-5" />
-                </span>
-                <h3 className="mt-4 text-lg font-semibold">{group.title}</h3>
-                <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  {group.description}
-                </p>
-                <p className="mt-4 text-sm font-semibold text-primary">
-                  {group.routes.length} routes
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {group.routes.slice(0, 6).map((route) => (
-                    <RoutePill key={route.href} route={route} />
-                  ))}
-                </div>
-              </article>
-            ))}
+            {roleWorkspaceGroups.map((group, index) => {
+              const variant = getStableRandomVariant(
+                `role-workspaces-${group.title}`,
+                index,
+              );
+
+              return (
+                <article
+                  key={group.title}
+                  className={`rounded-lg border p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${variant.card}`}
+                >
+                  <span
+                    className={`flex size-10 items-center justify-center rounded-md shadow-sm ${variant.icon}`}
+                  >
+                    <group.icon className="size-5" />
+                  </span>
+
+                  <h3 className="mt-4 text-lg font-semibold text-foreground">
+                    {group.title}
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                    {group.description}
+                  </p>
+
+                  <p className="mt-4 text-sm font-semibold text-primary">
+                    {group.routes.length} routes
+                  </p>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {group.routes.slice(0, 6).map((route) => (
+                      <RoutePill key={route.href} route={route} />
+                    ))}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
 
@@ -860,9 +1003,15 @@ export default function Home() {
             title="Account activity routes come from real protected pages."
             description="These common protected routes are shared across authenticated roles for profile, security, purchases, saves, votes, and comments."
           />
+
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {commonProtectedRoutes.map((route) => (
-              <RouteCard key={route.href} route={route} />
+            {commonProtectedRoutes.map((route, index) => (
+              <RouteCard
+                key={route.href}
+                route={route}
+                index={index}
+                seed="common-protected-routes"
+              />
             ))}
           </div>
         </section>
@@ -873,35 +1022,54 @@ export default function Home() {
             title="Public discovery matches the existing feature pages."
             description="Ideas, campaigns, scientists, and community reports are the core public browsing areas already implemented in the app."
           />
+
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {productSurfaces.map((item) => (
-              <StandardCard key={item.title} item={item} />
+            {productSurfaces.map((item, index) => (
+              <StandardCard
+                key={item.title}
+                item={item}
+                index={index}
+                seed="product-surfaces"
+              />
             ))}
           </div>
         </section>
 
-        {gloriousSections.map((section) => (
-          <ImageBackedSection key={section.title} section={section} />
-        ))}
-
-        <section className="surface-card grid gap-6 p-6 lg:p-8">
+        <section className="grid gap-6 rounded-lg border border-border bg-card/80 p-6 text-card-foreground shadow-sm lg:p-8">
           <SectionHeading
             kicker="Workflow"
             title="The product lifecycle follows the real role model."
             description="The lifecycle starts in public discovery and continues through auth, scientist submission, admin moderation, and member adoption."
           />
+
           <div className="grid gap-4 lg:grid-cols-5">
-            {workflowSteps.map((step, index) => (
-              <article key={step.title} className="surface-muted p-5">
-                <span className="flex size-9 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
-                  {index + 1}
-                </span>
-                <h3 className="mt-4 text-lg font-semibold">{step.title}</h3>
-                <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  {step.description}
-                </p>
-              </article>
-            ))}
+            {workflowSteps.map((step, index) => {
+              const variant = getStableRandomVariant(
+                `workflow-${step.title}`,
+                index,
+              );
+
+              return (
+                <article
+                  key={step.title}
+                  className={`rounded-lg border p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${variant.card}`}
+                >
+                  <span
+                    className={`flex size-9 items-center justify-center rounded-md text-sm font-semibold shadow-sm ${variant.icon}`}
+                  >
+                    {index + 1}
+                  </span>
+
+                  <h3 className="mt-4 text-lg font-semibold text-foreground">
+                    {step.title}
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                    {step.description}
+                  </p>
+                </article>
+              );
+            })}
           </div>
         </section>
 
@@ -911,9 +1079,15 @@ export default function Home() {
             title="Paid idea access is covered by existing routes and services."
             description="Commerce content references the real checkout, purchase, and payment-success surfaces already present in the project."
           />
+
           <div className="grid gap-4 lg:grid-cols-3">
-            {commerceItems.map((item) => (
-              <StandardCard key={item.title} item={item} />
+            {commerceItems.map((item, index) => (
+              <StandardCard
+                key={item.title}
+                item={item}
+                index={index}
+                seed="commerce-items"
+              />
             ))}
           </div>
         </section>
@@ -924,9 +1098,15 @@ export default function Home() {
             title="Admin taxonomy tools are part of the home story."
             description="Categories, tags, and specialties are real admin-managed records used by ideas and scientist profiles."
           />
+
           <div className="grid gap-4 lg:grid-cols-3">
-            {taxonomyItems.map((item) => (
-              <StandardCard key={item.title} item={item} />
+            {taxonomyItems.map((item, index) => (
+              <StandardCard
+                key={item.title}
+                item={item}
+                index={index}
+                seed="taxonomy-items"
+              />
             ))}
           </div>
         </section>
@@ -937,15 +1117,25 @@ export default function Home() {
             title="Service domains come from the project architecture."
             description="The list below mirrors the repository's feature, service, and contract domains."
           />
-          <div className="surface-card flex flex-wrap gap-2 p-5">
-            {serviceDomains.map((domain) => (
-              <span
-                key={domain}
-                className="rounded-md border border-border bg-muted px-3 py-2 text-sm font-medium"
-              >
-                {domain}
-              </span>
-            ))}
+
+          <div className="rounded-lg border border-border bg-card/80 p-5 shadow-sm">
+            <div className="flex flex-wrap gap-2">
+              {serviceDomains.map((domain, index) => {
+                const variant = getStableRandomVariant(
+                  `service-domain-${domain}`,
+                  index,
+                );
+
+                return (
+                  <span
+                    key={domain}
+                    className={`rounded-md border px-3 py-2 text-sm font-medium text-foreground ${variant.card}`}
+                  >
+                    {domain}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         </section>
 
@@ -955,9 +1145,15 @@ export default function Home() {
             title="Data flow follows the repo's contract-first pattern."
             description="Pages use feature hooks, feature hooks call services, services use the shared HTTP client, and contracts validate data."
           />
+
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {architectureItems.map((item) => (
-              <StandardCard key={item.title} item={item} />
+            {architectureItems.map((item, index) => (
+              <StandardCard
+                key={item.title}
+                item={item}
+                index={index}
+                seed="architecture-items"
+              />
             ))}
           </div>
         </section>
@@ -968,9 +1164,15 @@ export default function Home() {
             title="Authentication, routing, and errors use existing utilities."
             description="This section is based on the current session helpers, proxy protection, dashboard defaults, token behavior, and API error handling."
           />
+
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {governanceItems.map((item) => (
-              <StandardCard key={item.title} item={item} />
+            {governanceItems.map((item, index) => (
+              <StandardCard
+                key={item.title}
+                item={item}
+                index={index}
+                seed="governance-items"
+              />
             ))}
           </div>
         </section>
@@ -982,14 +1184,17 @@ export default function Home() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
               Technical Stack
             </p>
+
             <h2 className="mt-3 text-3xl font-semibold tracking-tight">
               Built with the stack declared in the project README.
             </h2>
+
             <p className="mt-3 text-sm leading-7 text-background/75 dark:text-muted-foreground">
               This section summarizes the actual framework, form, query,
               validation, HTTP, styling, and routing tools used by the app.
             </p>
           </div>
+
           <div className="grid gap-3 sm:grid-cols-2">
             {stackItems.map((item) => (
               <div
@@ -1009,15 +1214,29 @@ export default function Home() {
             title="Answers are specific to this repository."
             description="The FAQ explains where the homepage content comes from and how it connects to real project code."
           />
+
           <div className="grid gap-4 md:grid-cols-2">
-            {faqs.map((item) => (
-              <article key={item.question} className="surface-card p-5">
-                <h3 className="text-base font-semibold">{item.question}</h3>
-                <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  {item.answer}
-                </p>
-              </article>
-            ))}
+            {faqs.map((item, index) => {
+              const variant = getStableRandomVariant(
+                `faq-${item.question}`,
+                index,
+              );
+
+              return (
+                <article
+                  key={item.question}
+                  className={`rounded-lg border p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${variant.card}`}
+                >
+                  <h3 className="text-base font-semibold text-foreground">
+                    {item.question}
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                    {item.answer}
+                  </p>
+                </article>
+              );
+            })}
           </div>
         </section>
 
@@ -1026,14 +1245,17 @@ export default function Home() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-foreground/75">
               Next Step
             </p>
+
             <h2 className="mt-3 text-3xl font-semibold tracking-tight">
               Continue through real Eco Spark routes.
             </h2>
+
             <p className="mt-3 max-w-3xl text-sm leading-7 text-primary-foreground/80">
               Browse public ideas, create an account, or use the support route
               for setup details around the backend API and protected workspaces.
             </p>
           </div>
+
           <div className="flex flex-wrap gap-3">
             <Link
               href="/idea"
@@ -1042,6 +1264,7 @@ export default function Home() {
               Browse ideas
               <ArrowRight className="size-4" />
             </Link>
+
             <Link
               href="/support"
               className="inline-flex items-center gap-2 rounded-md border border-primary-foreground/30 px-5 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/10"

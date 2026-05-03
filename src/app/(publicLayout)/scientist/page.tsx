@@ -409,10 +409,10 @@ export default function ScientistPage() {
             </div>
 
             <div className="flex flex-wrap gap-3 text-sm text-slate-600">
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-900">
+              <span className="rounded-full border border-emerald-200 bg-emerald-950 px-3 py-1.5 text-emerald-100">
                 Verified profiles appear first
               </span>
-              <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-sky-900">
+              <span className="rounded-full border border-sky-200 bg-sky-950 px-3 py-1.5 text-sky-100">
                 Two profiles per page
               </span>
             </div>
