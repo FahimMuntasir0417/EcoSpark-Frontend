@@ -625,6 +625,75 @@ const gloriousSections: ImageStorySection[] = [
   },
 ];
 
+const successMetrics = [
+  {
+    value: (innovationLabRoutes.length + adoptionHubRoutes.length).toString(),
+    label: "success routes",
+    detail: "Submit-to-review and discovery-to-adoption paths",
+    icon: CheckCircle2,
+  },
+  {
+    value: roleWorkspaceGroups.length.toString(),
+    label: "role workspaces",
+    detail: "Member, scientist, and admin dashboards",
+    icon: UsersRound,
+  },
+  {
+    value: serviceDomains.length.toString(),
+    label: "service domains",
+    detail: "Feature hooks, services, and contracts by domain",
+    icon: DatabaseZap,
+  },
+  {
+    value: `${commerceItems.length}/${taxonomyItems.length}`,
+    label: "commerce + taxonomy",
+    detail: "Paid access surfaces paired with category metadata",
+    icon: ShoppingCart,
+  },
+];
+
+const successSteps = [
+  {
+    title: "Submission becomes review-ready",
+    description:
+      "Scientists move from create idea, draft records, attachments, and submitted ideas into admin review.",
+    status: "Scientist pipeline",
+    icon: FlaskConical,
+    routes: selectRoutesByHref(scientistWorkspaceRoutes, [
+      "/scientist/dashboard/create-idea",
+      "/scientist/dashboard/draft-ideas",
+      "/scientist/dashboard/idea-attachments",
+      "/scientist/dashboard/submitted-ideas",
+    ]),
+  },
+  {
+    title: "Moderation turns records into trusted listings",
+    description:
+      "Admins use pending review, featured ideas, archives, reports, categories, tags, and specialties to keep public data reliable.",
+    status: "Admin controls",
+    icon: ShieldCheck,
+    routes: selectRoutesByHref(adminWorkspaceRoutes, [
+      "/admin/dashboard/pending-review",
+      "/admin/dashboard/featured-ideas",
+      "/admin/dashboard/archived-ideas",
+      "/admin/dashboard/al-idea-report",
+      "/admin/dashboard/create-idea-category",
+      "/admin/dashboard/tag-management",
+    ]),
+  },
+  {
+    title: "Discovery turns into member adoption",
+    description:
+      "Members browse public ideas, save records, vote, comment, purchase, and return through account activity routes.",
+    status: "Member adoption",
+    icon: Compass,
+    routes: selectRoutesByHref(
+      [...publicRouteItems, ...commonProtectedRoutes, ...memberWorkspaceRoutes],
+      ["/idea", "/saved-ideas", "/my-vote", "/my-comment", "/my-purchases"],
+    ),
+  },
+];
+
 const faqs = [
   {
     question: "What project data does this homepage use?",
@@ -858,19 +927,134 @@ function ImageBackedSection({ section }: { section: ImageStorySection }) {
   );
 }
 
+function SuccessSection() {
+  return (
+    <section className="home-success-section home-section-animated relative isolate overflow-hidden rounded-lg border border-border bg-card p-5 shadow-sm sm:p-6 lg:p-8">
+      <div aria-hidden="true" className="home-success-lattice" />
+      <div aria-hidden="true" className="home-success-signal" />
+
+      <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-end">
+        <div className="grid gap-4">
+          <span className="inline-flex w-fit items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+            <CheckCircle2 className="size-4" />
+            Success System
+          </span>
+
+          <div className="grid gap-3">
+            <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+              Eco Spark success is tracked from idea intake to paid access.
+            </h2>
+
+            <p className="max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
+              The path below is built from the project&apos;s real scientist
+              submission routes, admin moderation routes, member adoption
+              routes, service domains, commerce surfaces, and taxonomy tools.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/idea"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Browse success routes
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/scientist/dashboard/create-idea"
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-background/80 px-5 py-3 text-sm font-semibold text-foreground backdrop-blur-md transition-colors hover:bg-muted"
+            >
+              Start submission
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {successMetrics.map((metric) => (
+            <article
+              key={metric.label}
+              className="home-success-card rounded-lg border border-border bg-background/82 p-4 shadow-sm backdrop-blur-md"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                  <metric.icon className="size-5" />
+                </span>
+                <p className="text-3xl font-semibold tracking-tight text-primary">
+                  {metric.value}
+                </p>
+              </div>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-foreground">
+                {metric.label}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                {metric.detail}
+              </p>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative z-10 mt-8 grid gap-4 lg:grid-cols-3">
+        {successSteps.map((step, index) => (
+          <article
+            key={step.title}
+            className="home-success-card grid h-full gap-4 rounded-lg border border-border bg-background/82 p-5 shadow-sm backdrop-blur-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <span className="flex size-11 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                <step.icon className="size-5" />
+              </span>
+              <span className="rounded-md border border-border bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground">
+                0{index + 1}
+              </span>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+                {step.status}
+              </p>
+              <h3 className="mt-2 text-lg font-semibold text-foreground">
+                {step.title}
+              </h3>
+              <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                {step.description}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {step.routes.map((route) => (
+                <RoutePill key={route.href} route={route} />
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function HomePageBackground() {
   return (
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
     >
-      <div className="home-page-grid absolute inset-0 opacity-[0.55] dark:opacity-[0.35]" />
-      <div className="home-page-lanes absolute inset-x-0 top-0 h-[52rem] opacity-[0.7] dark:opacity-50" />
-      <div className="home-page-sweep absolute inset-y-0 left-0 w-1/2 opacity-[0.7] dark:opacity-[0.45]" />
+      <div className="home-page-grid absolute inset-0 opacity-[0.32] dark:opacity-[0.24]" />
+      <div className="home-page-lanes absolute inset-x-0 top-0 h-[80rem] opacity-[0.28] dark:opacity-[0.22]" />
+      <div className="home-page-edge-lanes absolute inset-0 opacity-[0.24] dark:opacity-[0.22]" />
+      <div className="home-page-data-rain absolute inset-0 opacity-[0.2] dark:opacity-[0.18]" />
+      <div className="home-page-sweep absolute inset-y-0 left-0 w-1/2 opacity-[0.22] dark:opacity-[0.18]" />
+      <div className="home-page-band-sweep absolute inset-y-0 left-0 w-2/5 opacity-[0.2] dark:opacity-[0.17]" />
       <div className="home-page-fade absolute inset-0" />
     </div>
   );
 }
+
+const animatedSectionClass =
+  "home-section-animated grid gap-5 rounded-lg p-4 sm:p-5";
+
+const animatedMetricSectionClass =
+  "home-section-animated grid gap-4 rounded-lg p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-4";
 
 export default function Home() {
   return (
@@ -878,8 +1062,8 @@ export default function Home() {
       <HomePageBackground />
       <HomeHero />
 
-      <main className="public-page-shell relative z-10">
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <main className="public-page-shell home-page-shell relative z-10">
+        <section className={animatedMetricSectionClass}>
           {platformMetrics.map((metric, index) => {
             const variant = getStableRandomVariant(
               `platform-metrics-${metric.label}`,
@@ -910,8 +1094,10 @@ export default function Home() {
         {gloriousSections.map((section) => (
           <ImageBackedSection key={section.title} section={section} />
         ))}
+<HomeIdeasShowcase />
+        <SuccessSection />
 
-        <section className="grid gap-5">
+        <section className={animatedSectionClass}>
           <SectionHeading
             kicker="Public Routes"
             title="Every public home section points to a real route."
@@ -930,7 +1116,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-5">
+        <section className={animatedSectionClass}>
           <SectionHeading
             kicker="Auth Flows"
             title="Authentication and recovery are shown as first-class flows."
@@ -949,7 +1135,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-5">
+        <section className={animatedSectionClass}>
           <SectionHeading
             kicker="Role Workspaces"
             title="Member, scientist, and admin routes are mapped from the app."
@@ -997,7 +1183,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-5">
+        <section className={animatedSectionClass}>
           <SectionHeading
             kicker="Common Protected Routes"
             title="Account activity routes come from real protected pages."
@@ -1016,7 +1202,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-5">
+        <section className={animatedSectionClass}>
           <SectionHeading
             kicker="Product Surface"
             title="Public discovery matches the existing feature pages."
@@ -1035,7 +1221,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-6 rounded-lg border border-border bg-card/80 p-6 text-card-foreground shadow-sm lg:p-8">
+        <section className="home-section-animated grid gap-6 rounded-lg border border-border bg-card/80 p-6 text-card-foreground shadow-sm lg:p-8">
           <SectionHeading
             kicker="Workflow"
             title="The product lifecycle follows the real role model."
@@ -1073,7 +1259,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-5">
+        <section className={animatedSectionClass}>
           <SectionHeading
             kicker="Commerce"
             title="Paid idea access is covered by existing routes and services."
@@ -1092,7 +1278,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-5">
+        <section className={animatedSectionClass}>
           <SectionHeading
             kicker="Taxonomy"
             title="Admin taxonomy tools are part of the home story."
@@ -1111,7 +1297,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-5">
+        <section className={animatedSectionClass}>
           <SectionHeading
             kicker="API Domains"
             title="Service domains come from the project architecture."
@@ -1139,7 +1325,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-5">
+        <section className={animatedSectionClass}>
           <SectionHeading
             kicker="Architecture"
             title="Data flow follows the repo's contract-first pattern."
@@ -1158,7 +1344,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-5">
+        <section className={animatedSectionClass}>
           <SectionHeading
             kicker="Governance"
             title="Authentication, routing, and errors use existing utilities."
@@ -1177,9 +1363,7 @@ export default function Home() {
           </div>
         </section>
 
-        <HomeIdeasShowcase />
-
-        <section className="grid gap-6 rounded-lg border border-border bg-foreground p-6 text-background lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:p-8 dark:bg-card dark:text-card-foreground">
+        <section className="home-section-animated home-section-animated-inverse grid gap-6 rounded-lg border border-border bg-foreground p-6 text-background lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:p-8 dark:bg-card dark:text-card-foreground">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
               Technical Stack
@@ -1208,7 +1392,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-5">
+        <section className={animatedSectionClass}>
           <SectionHeading
             kicker="FAQ"
             title="Answers are specific to this repository."
@@ -1240,7 +1424,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-6 rounded-lg border border-border bg-primary p-6 text-primary-foreground lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:p-8">
+        <section className="home-section-animated home-section-animated-primary grid gap-6 rounded-lg border border-border bg-primary p-6 text-primary-foreground lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:p-8">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-foreground/75">
               Next Step

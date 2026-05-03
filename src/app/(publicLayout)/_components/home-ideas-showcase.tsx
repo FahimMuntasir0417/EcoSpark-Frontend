@@ -154,7 +154,7 @@ export function HomeIdeasShowcase() {
 
   if (ideasQuery.isPending) {
     return (
-      <section className="surface-card p-6 lg:p-8">
+      <section className="home-section-animated surface-card p-6 lg:p-8">
         <p className="section-kicker">Live Ideas</p>
         <h2 className="section-title mt-2">Loading the public idea catalog.</h2>
         <div className="mt-6 surface-muted p-5">
@@ -170,7 +170,7 @@ export function HomeIdeasShowcase() {
 
   if (ideasQuery.isError) {
     return (
-      <section className="surface-card p-6 lg:p-8">
+      <section className="home-section-animated surface-card p-6 lg:p-8">
         <p className="section-kicker">Live Ideas</p>
         <h2 className="section-title mt-2">Browse live sustainability ideas.</h2>
         <div className="mt-6 surface-muted p-5">
@@ -187,7 +187,7 @@ export function HomeIdeasShowcase() {
   }
 
   return (
-    <section className="surface-card p-6 lg:p-8">
+    <section className="home-section-animated surface-card p-6 lg:p-8">
       <div className="grid gap-5 border-b border-border pb-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
         <div>
           <span className="inline-flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">

@@ -183,21 +183,19 @@ function DashboardThemeToggle({
   onToggle: () => void;
 }) {
   const Icon = theme === "dark" ? Sun : Moon;
+  const label =
+    theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
 
   return (
     <Button
       type="button"
       variant="outline"
-      className="gap-2"
+      size="icon-lg"
       onClick={onToggle}
-      aria-label={
-        theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
-      }
+      aria-label={label}
+      title={label}
     >
       <Icon className="size-4" />
-      <span className="hidden sm:inline">
-        {theme === "dark" ? "Light" : "Dark"}
-      </span>
     </Button>
   );
 }

@@ -327,28 +327,23 @@ function setDocumentTheme(mode: ThemeMode) {
 function ThemeToggle({
   theme,
   onToggle,
-  compact = false,
 }: {
   theme: ThemeMode;
   onToggle: () => void;
-  compact?: boolean;
 }) {
   const Icon = theme === "dark" ? Sun : Moon;
+  const label =
+    theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
 
   return (
     <button
       type="button"
       onClick={onToggle}
-      className={cn(
-        "inline-flex items-center justify-center rounded-md border border-border bg-card text-foreground shadow-sm transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
-        compact ? "size-10" : "h-10 gap-2 px-3 text-base font-semibold",
-      )}
-      aria-label={
-        theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
-      }
+      className="inline-flex size-10 items-center justify-center rounded-md border border-border bg-card text-foreground shadow-sm transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+      aria-label={label}
+      title={label}
     >
       <Icon className="size-4" />
-      {compact ? null : <span>{theme === "dark" ? "Light" : "Dark"}</span>}
     </button>
   );
 }
@@ -802,7 +797,7 @@ export function PublicNavbarClient({
           </div>
 
           <div className="flex items-center gap-2 2xl:hidden">
-            <ThemeToggle theme={theme} onToggle={toggleTheme} compact />
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
 
             <button
               type="button"
