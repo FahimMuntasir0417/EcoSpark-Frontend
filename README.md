@@ -1,4 +1,4 @@
-# Eco Spark Frontend
+# Eco Spark
 
 A role-based sustainability innovation platform for submitting, reviewing, moderating, purchasing, and adopting eco-focused ideas.
 
@@ -45,7 +45,7 @@ The application supports four role categories:
 - `MEMBER`
 - `SCIENTIST`
 - `ADMIN`
-- `SUPER_ADMIN`
+-
 
 The product surface includes:
 
@@ -78,17 +78,17 @@ Eco Spark provides a Next.js frontend with public routes, protected dashboards, 
 
 ## Tech Stack
 
-| Area | Stack |
-| --- | --- |
-| Frontend | Next.js `16.2.1`, React `19.2.4`, TypeScript |
-| Styling | Tailwind CSS `4`, local UI primitives, shadcn/Base UI conventions |
-| Data fetching | TanStack Query |
-| Forms | TanStack Form, Zod |
-| Backend integration | Axios, Next.js rewrites, REST API |
-| Auth | Cookies, local storage session mirror, JWT/token refresh flow |
-| Validation/contracts | Zod |
-| Icons | Lucide React |
-| Tooling | ESLint, TypeScript, pnpm, Vercel |
+| Area                 | Stack                                                             |
+| -------------------- | ----------------------------------------------------------------- |
+| Frontend             | Next.js `16.2.1`, React `19.2.4`, TypeScript                      |
+| Styling              | Tailwind CSS `4`, local UI primitives, shadcn/Base UI conventions |
+| Data fetching        | TanStack Query                                                    |
+| Forms                | TanStack Form, Zod                                                |
+| Backend integration  | Axios, Next.js rewrites, REST API                                 |
+| Auth                 | Cookies, local storage session mirror, JWT/token refresh flow     |
+| Validation/contracts | Zod                                                               |
+| Icons                | Lucide React                                                      |
+| Tooling              | ESLint, TypeScript, pnpm, Vercel                                  |
 
 ## Dependencies
 
@@ -140,9 +140,9 @@ Project images are available in [`public/images`](public/images):
 
 Use demo credentials only for non-production demonstrations.
 
-| Role | Email | Password |
-| --- | --- | --- |
-| Admin | `admin@ecospark.local` | `Admin12345` |
+| Role      | Email                       | Password         |
+| --------- | --------------------------- | ---------------- |
+| Admin     | `admin@ecospark.local`      | `Admin12345`     |
 | Scientist | `muntasirbejoy66@gmail.com` | `StrongPass123!` |
 
 ## Installation and Setup
@@ -252,12 +252,12 @@ Eco Spark uses a mixed server/client session model:
 
 Role defaults:
 
-| Role | Default route |
-| --- | --- |
-| `MEMBER` | `/dashboard` |
-| `SCIENTIST` | `/scientist/dashboard` |
-| `ADMIN` | `/admin/dashboard` |
-| `SUPER_ADMIN` | `/admin/dashboard` |
+| Role          | Default route          |
+| ------------- | ---------------------- |
+| `MEMBER`      | `/dashboard`           |
+| `SCIENTIST`   | `/scientist/dashboard` |
+| `ADMIN`       | `/admin/dashboard`     |
+| `SUPER_ADMIN` | `/admin/dashboard`     |
 
 ### Public routes
 
@@ -338,17 +338,17 @@ The application is organized around feature/service domains, including:
 
 ## Available Scripts
 
-| Command | Purpose |
-| --- | --- |
-| `pnpm dev` | Start Next.js in webpack dev mode |
-| `pnpm dev:turbopack` | Start Next.js in turbopack dev mode |
-| `pnpm dev:webpack` | Explicit webpack dev mode |
-| `pnpm build` | Production build |
-| `pnpm start` | Start the production server |
-| `pnpm lint` | Run ESLint |
-| `pnpm typecheck` | Run TypeScript without emitting output |
-| `pnpm check` | Run typecheck and lint |
-| `pnpm clean` | Remove `node_modules`, `.next`, `.dist`, and `pnpm-lock.yaml` |
+| Command              | Purpose                                                       |
+| -------------------- | ------------------------------------------------------------- |
+| `pnpm dev`           | Start Next.js in webpack dev mode                             |
+| `pnpm dev:turbopack` | Start Next.js in turbopack dev mode                           |
+| `pnpm dev:webpack`   | Explicit webpack dev mode                                     |
+| `pnpm build`         | Production build                                              |
+| `pnpm start`         | Start the production server                                   |
+| `pnpm lint`          | Run ESLint                                                    |
+| `pnpm typecheck`     | Run TypeScript without emitting output                        |
+| `pnpm check`         | Run typecheck and lint                                        |
+| `pnpm clean`         | Remove `node_modules`, `.next`, `.dist`, and `pnpm-lock.yaml` |
 
 Build cleanup is also handled by [`scripts/clean-dist.js`](scripts/clean-dist.js).
 
@@ -381,8 +381,8 @@ NEXT_PUBLIC_GOOGLE_AUTH_URL=https://YOUR_BACKEND_HOST/api/v1/auth/login/google
 
 If this is a team project, list contributors here.
 
-| Name | Role | Contributions |
-| --- | --- | --- |
+| Name     | Role | Contributions |
+| -------- | ---- | ------------- |
 | Member-1 | Role | Contributions |
 | Member-2 | Role | Contributions |
 
@@ -468,5 +468,5 @@ No license file is currently defined in this repository. Add a `LICENSE` or `LIC
 **Backend API:** [Eco Spark API](https://assignment-eco-spark.vercel.app)  
 **Frontend Repo:** [EcoSpark-Frontend](https://github.com/FahimMuntasir0417/EcoSpark-Frontend)  
 **Backend Repo:** [EcoSpark-Hub](https://github.com/FahimMuntasir0417/EcoSpark-Hub)  
-**Email:** Add your project contact email here.  
-**Portfolio:** Add your portfolio link here.
+**Email:** [fahimmuntasirbejoy@gmail.com](mailto:fahimmuntasirbejoy@gmail.com)  
+**Portfolio:** [Fahim Portfolio](https://fahim-portfolio-dun.vercel.app/)
