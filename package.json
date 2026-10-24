@@ -6,12 +6,12 @@
     "node": "20.x"
   },
   "scripts": {
-    "dev": "node api.js && next dev --webpack",
-    "dev:turbopack": "node api.js && next dev --turbopack",
-    "dev:webpack": "node api.js && next dev --webpack",
+    "dev": "next dev --webpack",
+    "dev:turbopack": "next dev --turbopack",
+    "dev:webpack": "next dev --webpack",
     "prebuild": "node scripts/clean-dist.js",
-    "build": "node api.js && next build --webpack",
-    "start": "node api.js && next start",
+    "build": "next build --webpack",
+    "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "check": "pnpm run typecheck && pnpm run lint",
